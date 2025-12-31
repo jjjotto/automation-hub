@@ -1,0 +1,28 @@
+## .NET build artifacts
+bin/
+obj/
+
+## VS cache
+.vs/
+
+## User settings
+*.user
+*.suo
+
+## Logs
+logs/
+*.log
+
+## Published binaries
+AutomationHub.App/publish/
+AutomationHub.App/bin/Release/
+AutomationHub.App/bin/Debug/
+AutomationHub.App/obj/
+
+## Temporary files
+*.cache
+*.tmp
+
+## OS files
+Thumbs.db
+.DS_Store

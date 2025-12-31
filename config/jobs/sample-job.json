@@ -1,0 +1,27 @@
+{
+  "name": "Sample ECL1 QC Export",
+  "type": "Hybrid",
+  "enabled": true,
+  "process": {
+    "command": "Y:/temporary_files/JO/automation/AutoQC-UTSW/Batch_ImportNew_ExportRT.bat",
+    "arguments": "",
+    "workingDirectory": "Y:/temporary_files/JO/automation/AutoQC-UTSW"
+  },
+  "fileTrigger": {
+    "watchPath": "Y:/temporary_files/JO/automation/ECL1",
+    "includeSubfolders": true,
+    "instrumentType": "Thermo",
+    "acquisitionMinutes": 90,
+    "filter": {
+      "kind": "startsWith",
+      "pattern": "ECL1_HeLa_"
+    }
+  },
+  "schedule": {
+    "cron": "0 0 6 ? * MON-FRI",
+    "timezone": "Central Standard Time",
+    "startPaused": false
+  },
+  "outputLog": "Y:/temporary_files/JO/automation/logs/ecl1.log",
+  "notes": "Placeholder job demonstrating JSON structure"
+}

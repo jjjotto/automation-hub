@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\AutomationHub.Core\AutomationHub.Core.csproj" />
+    <ProjectReference Include="..\AutomationHub.Watchers\AutomationHub.Watchers.csproj" />
+    <ProjectReference Include="..\AutomationHub.Scheduler\AutomationHub.Scheduler.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+</Project>
