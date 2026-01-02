@@ -51,6 +51,16 @@ See **[PROCESS_EXECUTION.md](PROCESS_EXECUTION.md)** for detailed documentation 
 
 ## Getting started
 
+### For End Users (Running the Application)
+
+If you just want to use Automation Hub:
+
+1. Download the installer or portable package (see [Releases](https://github.com/jjjotto/automation-hub/releases))
+2. Run the installer and follow the prompts, or extract the portable ZIP
+3. See **[BUILDING_INSTALLER.md](BUILDING_INSTALLER.md)** for distribution details
+
+### For Developers (Building from Source)
+
 1. Install the prerequisites listed in `requirements.md`.
 2. Clone the repository and open `AutomationHub.sln` in Visual Studio or VS Code.
 3. Restore dependencies and build:
@@ -60,10 +70,22 @@ See **[PROCESS_EXECUTION.md](PROCESS_EXECUTION.md)** for detailed documentation 
    ```
 4. Launch the WPF project (`AutomationHub.App`) to see the sample job list loaded from the shared configuration directory.
 
+### Building an Installer
+
+To create a distributable installer:
+
+1. **Windows Installer (Recommended)**: Run `build-installer.bat` or `build-installer.ps1`
+2. **Portable ZIP**: Run `build-portable.ps1`
+
+See **[BUILDING_INSTALLER.md](BUILDING_INSTALLER.md)** for detailed instructions.
+
 ## Next steps
 
 - Port the AutoQC watcher logic into `AutomationHub.Watchers` for acquisition-aware file readiness checks.
 - Integrate Quartz for accurate cron scheduling.
 - Wire the GUI controls to scheduler + watcher services so jobs can be started/stopped interactively.
 - Add persistence for runtime state (enable/disable flags, last-run status) using JSON or LiteDB files on `Y:`.
-- Package the app using `dotnet publish` and distribute it on `Y:\temporary_files\JO\automation`.
+
+## Distribution
+
+See **[BUILDING_INSTALLER.md](BUILDING_INSTALLER.md)** for instructions on creating installers and distributing the application.

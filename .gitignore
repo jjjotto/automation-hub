@@ -18,6 +18,10 @@ AutomationHub.App/publish/
 AutomationHub.App/bin/Release/
 AutomationHub.App/bin/Debug/
 AutomationHub.App/obj/
+publish/
+installer-output/
+portable-output/
+*.zip
 
 ## Temporary files
 *.cache
