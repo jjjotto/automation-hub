@@ -26,3 +26,6 @@ AutomationHub.App/obj/
 ## OS files
 Thumbs.db
 .DS_Store
+
+## Local development config
+local-config/
