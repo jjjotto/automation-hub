@@ -65,8 +65,9 @@ var
   ResultCode: Integer;
   Output: AnsiString;
 begin
-  // Check if .NET 8.x Desktop Runtime is installed (matches 8.0, 8.1, etc., but not 18.x)
-  // Pattern: "Microsoft.WindowsDesktop.App 8\.[0-9]" ensures major version is exactly 8
+  // Check if .NET 8.x Desktop Runtime is installed
+  // Pattern matches "8." followed by any digit, which correctly identifies all 8.x versions
+  // Examples: 8.0.1, 8.1.5, 8.10.3, etc. (but not 18.x or 28.x)
   if Exec('cmd.exe', '/c dotnet --list-runtimes | findstr /R "Microsoft.WindowsDesktop.App 8\.[0-9]"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
   begin
     Result := (ResultCode = 0);

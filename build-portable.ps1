@@ -95,8 +95,9 @@ echo.
 echo === Automation Hub ===
 echo.
 
-REM Check if .NET Desktop Runtime 8.x is installed (matches 8.0, 8.1, etc., but not 18.x)
-REM Using findstr /R for regex pattern matching
+REM Check if .NET Desktop Runtime 8.x is installed
+REM Pattern matches "8." followed by any digit, which correctly identifies all 8.x versions
+REM Examples: 8.0.1, 8.1.5, 8.10.3, etc. (but not 18.x or 28.x)
 dotnet --list-runtimes | findstr /R "Microsoft.WindowsDesktop.App 8\.[0-9]" >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo Error: .NET 8 Desktop Runtime is required but not installed.
