@@ -19,15 +19,19 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
-LicenseFile=
-InfoBeforeFile=
-InfoAfterFile=
+; Optional: Add license file path here if you have one
+; LicenseFile=LICENSE.txt
+; Optional: Add info file to show before installation
+; InfoBeforeFile=INSTALL_INFO.txt
+; Optional: Add info file to show after installation
+; InfoAfterFile=POST_INSTALL_INFO.txt
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=installer-output
 OutputBaseFilename=AutomationHub-Setup-{#MyAppVersion}
-SetupIconFile=
+; Optional: Add custom icon for the installer
+; SetupIconFile=AutomationHub.App\Resources\icon.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -61,8 +65,8 @@ var
   ResultCode: Integer;
   Output: AnsiString;
 begin
-  // Check if .NET 8 Desktop Runtime is installed
-  if Exec('cmd.exe', '/c dotnet --list-runtimes | findstr "Microsoft.WindowsDesktop.App 8."', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  // Check if .NET 8.x Desktop Runtime is installed (matches 8.0.x, 8.1.x, etc., but not 18.x)
+  if Exec('cmd.exe', '/c dotnet --list-runtimes | findstr "Microsoft.WindowsDesktop.App 8\."', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
   begin
     Result := (ResultCode = 0);
   end

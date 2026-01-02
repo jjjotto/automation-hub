@@ -95,8 +95,8 @@ echo.
 echo === Automation Hub ===
 echo.
 
-REM Check if .NET Desktop Runtime is installed
-dotnet --list-runtimes | findstr "Microsoft.WindowsDesktop.App 8." >nul 2>nul
+REM Check if .NET Desktop Runtime 8.x is installed (matches 8.0.x, 8.1.x, etc., but not 18.x)
+dotnet --list-runtimes | findstr "Microsoft.WindowsDesktop.App 8\." >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo Error: .NET 8 Desktop Runtime is required but not installed.
     echo.
@@ -168,8 +168,14 @@ if (Test-Path $ZipPath) {
     Remove-Item $ZipPath -Force
 }
 
-Add-Type -Assembly System.IO.Compression.FileSystem
-[System.IO.Compression.ZipFile]::CreateFromDirectory($PortableDir, $ZipPath, 'Optimal', $false)
+# Use PowerShell's Compress-Archive for better compatibility
+try {
+    Compress-Archive -Path "$PortableDir\*" -DestinationPath $ZipPath -CompressionLevel Optimal
+} catch {
+    # Fallback to .NET compression if Compress-Archive fails
+    Add-Type -Assembly System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($PortableDir, $ZipPath, 'Optimal', $false)
+}
 
 Write-Host "✓ ZIP archive created" -ForegroundColor Green
 

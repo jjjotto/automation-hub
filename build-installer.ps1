@@ -89,6 +89,8 @@ Write-Host "Checking for Inno Setup..." -ForegroundColor Yellow
 $InnoSetupPaths = @(
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
     "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
+    "${env:ProgramFiles(x86)}\Inno Setup 7\ISCC.exe"
+    "${env:ProgramFiles}\Inno Setup 7\ISCC.exe"
     "${env:ProgramFiles(x86)}\Inno Setup 5\ISCC.exe"
     "${env:ProgramFiles}\Inno Setup 5\ISCC.exe"
 )
