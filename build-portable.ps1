@@ -95,8 +95,9 @@ echo.
 echo === Automation Hub ===
 echo.
 
-REM Check if .NET Desktop Runtime 8.x is installed (matches 8.0.x, 8.1.x, etc., but not 18.x)
-dotnet --list-runtimes | findstr "Microsoft.WindowsDesktop.App 8\." >nul 2>nul
+REM Check if .NET Desktop Runtime 8.x is installed (matches 8.0, 8.1, etc., but not 18.x)
+REM Using findstr /R for regex pattern matching
+dotnet --list-runtimes | findstr /R "Microsoft.WindowsDesktop.App 8\.[0-9]" >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo Error: .NET 8 Desktop Runtime is required but not installed.
     echo.
@@ -115,7 +116,7 @@ start "" "%~dp0AutomationHub.App.exe"
 "@
 
 $LauncherPath = Join-Path $PackageDir "Start-AutomationHub.bat"
-$LauncherScript | Out-File -FilePath $LauncherPath -Encoding ASCII
+$LauncherScript | Out-File -FilePath $LauncherPath -Encoding UTF8
 
 # Create README
 $ReadmeContent = @"

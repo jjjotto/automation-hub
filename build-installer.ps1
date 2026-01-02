@@ -86,19 +86,24 @@ if (-not $SkipBuild) {
 Write-Host ""
 Write-Host "Checking for Inno Setup..." -ForegroundColor Yellow
 
-$InnoSetupPaths = @(
-    "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-    "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
-    "${env:ProgramFiles(x86)}\Inno Setup 7\ISCC.exe"
-    "${env:ProgramFiles}\Inno Setup 7\ISCC.exe"
-    "${env:ProgramFiles(x86)}\Inno Setup 5\ISCC.exe"
-    "${env:ProgramFiles}\Inno Setup 5\ISCC.exe"
-)
-
+# Try to find Inno Setup in common locations (versions 5-9)
 $InnoSetupExe = $null
-foreach ($path in $InnoSetupPaths) {
-    if (Test-Path $path) {
-        $InnoSetupExe = $path
+$InnoSetupVersions = 9..5  # Check newer versions first
+
+foreach ($version in $InnoSetupVersions) {
+    $paths = @(
+        "${env:ProgramFiles(x86)}\Inno Setup $version\ISCC.exe"
+        "${env:ProgramFiles}\Inno Setup $version\ISCC.exe"
+    )
+    
+    foreach ($path in $paths) {
+        if (Test-Path $path) {
+            $InnoSetupExe = $path
+            break
+        }
+    }
+    
+    if ($null -ne $InnoSetupExe) {
         break
     }
 }
