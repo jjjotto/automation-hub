@@ -16,6 +16,21 @@ Supporting assets:
 - `config/jobs/sample-job.json` – starter job manifest.
 - `requirements.md` – up-to-date installation and tooling checklist.
 
+## Documentation and Screenshots
+
+For detailed information about running and using the application:
+
+- **[RUNNING_THE_APP.md](RUNNING_THE_APP.md)** – Complete guide on how to build, run, and configure the application
+- **[UI_SCREENSHOTS.md](UI_SCREENSHOTS.md)** – Detailed UI specifications and visual mockups
+- **[ui-mockup.html](ui-mockup.html)** – Interactive HTML mockup of the application interface
+- **[docs/](docs/)** – Screenshots and additional documentation
+
+### Application Preview
+
+![Automation Hub Window](docs/automation-hub-window-only.png)
+
+The application displays a data grid showing all configured automation jobs with their type, enabled status, command, and trigger path.
+
 ## Getting started
 
 1. Install the prerequisites listed in `requirements.md`.
