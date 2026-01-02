@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automation Hub - UI Mockup</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+            margin: 20px;
+            padding: 0;
+        }
+        
+        .window-container {
+            max-width: 960px;
+            margin: 0 auto;
+            background-color: white;
+            border: 1px solid #999;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .title-bar {
+            background: linear-gradient(to bottom, #e8e8e8 0%, #d8d8d8 100%);
+            border-bottom: 1px solid #999;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .title-text {
+            font-size: 12px;
+            font-weight: 400;
+            color: #333;
+        }
+        
+        .window-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .window-button {
+            width: 20px;
+            height: 20px;
+            background-color: #e0e0e0;
+            border: 1px solid #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        
+        .window-button:hover {
+            background-color: #d0d0d0;
+        }
+        
+        .content {
+            padding: 12px;
+            min-height: 380px;
+        }
+        
+        .header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #000;
+        }
+        
+        .data-grid {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #ccc;
+            margin-bottom: 12px;
+        }
+        
+        .data-grid th {
+            background-color: #f5f5f5;
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+        }
+        
+        .data-grid td {
+            border: 1px solid #e0e0e0;
+            padding: 8px;
+            font-size: 11px;
+        }
+        
+        .data-grid tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        
+        .data-grid tr:hover {
+            background-color: #e8f4ff;
+        }
+        
+        .checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        
+        .status-bar {
+            font-style: italic;
+            color: #808080;
+            font-size: 11px;
+            margin-top: 12px;
+        }
+        
+        .description {
+            background-color: #fff9e6;
+            border: 1px solid #ffd700;
+            padding: 15px;
+            margin: 20px auto;
+            max-width: 960px;
+            border-radius: 4px;
+        }
+        
+        .description h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .description p {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+        
+        .col-name { width: 25%; }
+        .col-type { width: 12%; }
+        .col-enabled { width: 8%; text-align: center; }
+        .col-command { width: 30%; }
+        .col-trigger { width: 25%; }
+        
+        .truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="description">
+        <h2>Automation Hub - WPF Application UI Mockup</h2>
+        <p><strong>Note:</strong> This is an HTML mockup of the Automation Hub WPF desktop application. The actual application is built using .NET 8 and WPF (Windows Presentation Foundation) and requires Windows to run.</p>
+        <p>This mockup demonstrates the visual appearance and layout of the application interface based on the XAML design.</p>
+    </div>
+    
+    <div class="window-container">
+        <div class="title-bar">
+            <div class="title-text">Automation Hub</div>
+            <div class="window-buttons">
+                <div class="window-button">_</div>
+                <div class="window-button">□</div>
+                <div class="window-button">✕</div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="header">Automation Hub Jobs</div>
+            
+            <table class="data-grid">
+                <thead>
+                    <tr>
+                        <th class="col-name">Name</th>
+                        <th class="col-type">Type</th>
+                        <th class="col-enabled">Enabled</th>
+                        <th class="col-command">Command</th>
+                        <th class="col-trigger">Trigger Path</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="col-name">Sample ECL1 QC Export</td>
+                        <td class="col-type">Hybrid</td>
+                        <td class="col-enabled"><input type="checkbox" class="checkbox" checked disabled></td>
+                        <td class="col-command truncate" title="Y:/temporary_files/JO/automation/AutoQC-UTSW/Batch_ImportNew_ExportRT.bat">
+                            Y:/temporary_files/JO/automation/AutoQC-UTSW/Batch_ImportNew_ExportRT.bat
+                        </td>
+                        <td class="col-trigger truncate" title="Y:/temporary_files/JO/automation/ECL1">
+                            Y:/temporary_files/JO/automation/ECL1
+                        </td>
+                    </tr>
+                    <!-- Empty rows to show grid space -->
+                    <tr style="height: 40px;">
+                        <td colspan="5" style="border: none; background-color: white;"></td>
+                    </tr>
+                    <tr style="height: 40px;">
+                        <td colspan="5" style="border: none; background-color: #fafafa;"></td>
+                    </tr>
+                    <tr style="height: 40px;">
+                        <td colspan="5" style="border: none; background-color: white;"></td>
+                    </tr>
+                    <tr style="height: 40px;">
+                        <td colspan="5" style="border: none; background-color: #fafafa;"></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="status-bar">Loaded 1 job(s)</div>
+        </div>
+    </div>
+    
+    <div class="description" style="margin-top: 20px;">
+        <h2>How to Run the Actual Application</h2>
+        <p><strong>System Requirements:</strong></p>
+        <ul>
+            <li>Windows 10 (22H2+) or Windows 11</li>
+            <li>.NET 8.0 Desktop Runtime or SDK</li>
+            <li>Access to Y:\temporary_files\JO\automation (or local-config directory)</li>
+        </ul>
+        
+        <p><strong>To run the application:</strong></p>
+        <ol>
+            <li>Clone the repository: <code>git clone https://github.com/jjjotto/automation-hub.git</code></li>
+            <li>Open in Visual Studio 2022 or use command line</li>
+            <li>Build: <code>dotnet build</code></li>
+            <li>Run: <code>dotnet run --project AutomationHub.App/AutomationHub.App.csproj</code></li>
+        </ol>
+        
+        <p><strong>Configuration:</strong></p>
+        <p>The application automatically falls back to a local-config directory if the Y: network drive is not available, making it easy to run in development mode.</p>
+        
+        <p>For detailed instructions, see <strong>RUNNING_THE_APP.md</strong> and <strong>UI_SCREENSHOTS.md</strong></p>
+    </div>
+    
+</body>
+</html>
