@@ -1,19 +1,20 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
-using AutomationHub.Core.Configuration;
-using AutomationHub.Core.Jobs;
+using System.Windows;
+using AutomationHub.App.Runtime;
+using AutomationHub.Core.Execution;
 
 namespace AutomationHub.App.ViewModels;
 
 public sealed class MainWindowViewModel : INotifyPropertyChanged
 {
     private string _statusMessage = "Ready";
+    private AutomationRuntimeHost? _runtimeHost;
 
-    public ObservableCollection<JobDefinition> Jobs { get; } = new();
+    public ObservableCollection<JobListItem> Jobs { get; } = new();
 
     public string StatusMessage
     {
@@ -33,24 +34,37 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         {
             Jobs.Clear();
 
-            var jobsDir = ConfigPaths.JobsDirectory;
-            if (!Directory.Exists(jobsDir))
+            var host = (Application.Current as App)?.RuntimeHost;
+            if (host is null)
             {
-                StatusMessage = $"Jobs directory not found: {jobsDir}";
+                StatusMessage = "Runtime host has not been initialized.";
                 return;
             }
 
-            foreach (var jobFile in Directory.EnumerateFiles(jobsDir, "*.json", SearchOption.TopDirectoryOnly))
+            AttachToRuntimeHost(host);
+
+            foreach (var entry in host.JobEntries)
             {
-                var json = File.ReadAllText(jobFile);
-                var job = JsonSerializer.Deserialize<JobDefinition>(json);
-                if (job is not null)
-                {
-                    Jobs.Add(job);
-                }
+                var item = new JobListItem(entry);
+                var status = host.StatusService.GetStatus(entry.Job.Name)?.Message;
+                item.UpdateStatus(status);
+                Jobs.Add(item);
             }
 
-            StatusMessage = Jobs.Count == 0 ? "No jobs defined" : $"Loaded {Jobs.Count} job(s)";
+            if (host.JobLoadErrors.Count > 0)
+            {
+                var firstError = host.JobLoadErrors[0];
+                StatusMessage = $"Loaded {Jobs.Count} job(s) with {host.JobLoadErrors.Count} load error(s). First: {firstError.Message}";
+            }
+            else
+            {
+                StatusMessage = Jobs.Count == 0 ? "No jobs defined" : $"Loaded {Jobs.Count} job(s)";
+            }
+
+            if (host.RuntimeErrors.Count > 0)
+            {
+                StatusMessage += $" | Runtime warning: {host.RuntimeErrors[0]}";
+            }
         }
         catch (Exception ex)
         {
@@ -63,5 +77,38 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    private void AttachToRuntimeHost(AutomationRuntimeHost host)
+    {
+        if (host is null)
+        {
+            return;
+        }
+
+        if (!ReferenceEquals(_runtimeHost, host))
+        {
+            if (_runtimeHost is not null)
+            {
+                _runtimeHost.StatusService.JobStatusChanged -= OnJobStatusChanged;
+            }
+
+            _runtimeHost = host;
+            _runtimeHost.StatusService.JobStatusChanged += OnJobStatusChanged;
+        }
+    }
+
+    private void OnJobStatusChanged(object? sender, JobStatusChangedEventArgs e)
+    {
+        if (Application.Current?.Dispatcher is null)
+        {
+            return;
+        }
+
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            var target = Jobs.FirstOrDefault(j => string.Equals(j.Job.Name, e.JobName, StringComparison.OrdinalIgnoreCase));
+            target?.UpdateStatus(e.Message);
+        });
     }
 }

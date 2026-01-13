@@ -114,6 +114,7 @@ The Automation Hub main window displays a list of all configured automation jobs
 
 1. **Header Section**
    - Large, bold title: "Automation Hub Jobs" (20pt font)
+   - **Add Job button** on the right: creates a new job manifest and opens the settings dialog for immediate editing
 
 2. **Jobs Data Grid** (Main Content Area)
    - **Name Column** (2x width) - Display name of the job
@@ -121,6 +122,8 @@ The Automation Hub main window displays a list of all configured automation jobs
    - **Enabled Column** (Auto width) - Checkbox showing if job is enabled
    - **Command Column** (2x width) - The command/script that will be executed
    - **Trigger Path Column** (2x width) - The file path being monitored for file-trigger jobs
+   - **Log Column** - Button that opens the per-job activity log (live feed of triggers/output with timestamps)
+   - **Settings Column** - Button that opens the in-app Job Settings dialog for editing manifest fields (command, watch folder, filters, etc.). Saving reloads the runtime instantly.
 
 3. **Status Bar** (Bottom)
    - Italic, gray text showing current status
@@ -153,12 +156,16 @@ The application comes with a sample job configuration (`config/jobs/sample-job.j
   "fileTrigger": {
     "watchPath": "Y:/temporary_files/JO/automation/ECL1",
     "includeSubfolders": true,
-    "instrumentType": "Thermo",
-    "acquisitionMinutes": 90,
-    "filter": {
-      "kind": "startsWith",
-      "pattern": "ECL1_HeLa_"
-    }
+      "filters": [
+         {
+            "kind": "startsWith",
+            "pattern": "ECL1_HeLa_"
+         },
+         {
+            "kind": "endsWith",
+            "pattern": ".raw"
+         }
+      ]
   },
   "schedule": {
     "cron": "0 0 6 ? * MON-FRI",
@@ -172,8 +179,9 @@ The application comes with a sample job configuration (`config/jobs/sample-job.j
 ### Startup
 1. Application window opens with title "Automation Hub"
 2. Attempts to load jobs from the configured directory
-3. Displays status message indicating success or failure
-4. Populates the data grid with loaded jobs
+3. Spins up the Automation Runtime Host, which wires file-trigger and scheduled jobs into watchers/schedulers (AutoQC-style readiness included)
+4. Displays status message indicating success or failure (including load/runtime warnings)
+5. Populates the data grid with loaded jobs
 
 ### Status Messages
 - **"Ready"** - Initial state before loading jobs
@@ -181,6 +189,14 @@ The application comes with a sample job configuration (`config/jobs/sample-job.j
 - **"No jobs defined"** - Jobs directory exists but contains no .json files
 - **"Jobs directory not found: [path]"** - Configuration directory doesn't exist
 - **"Error loading jobs: [error]"** - An exception occurred during loading
+- **"Runtime warning: [details]"** - The runtime host skipped a job (e.g., watch folder unavailable) but kept the app running
+- **"Loaded N job(s) with M load error(s)"** - Shown when one or more JSON files failed to deserialize (the first error is included in-line)
+
+### Viewing Job Logs
+
+- Select any job row and click **View Log** to open the live activity window.
+- The log shows watcher state changes ("waiting for new files", "detected LUM1_HeLa_123.raw"), scheduled trigger firings, manual kicks, and process completion summaries.
+- Each entry is timestamped so you can immediately confirm what happened most recently and whether the job is currently idle or processing.
 
 ## Troubleshooting
 

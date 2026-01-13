@@ -15,7 +15,7 @@ public sealed class FileMonitoringService : IAsyncDisposable
 {
     private readonly FileTriggerSettings _settings;
     private readonly FileSystemWatcher _watcher;
-    private readonly FileFilter _filter;
+    private readonly IReadOnlyList<FileFilter> _filters;
     private readonly Channel<MonitoredFileEvent> _eventChannel = Channel.CreateUnbounded<MonitoredFileEvent>();
 
     public FileMonitoringService(FileTriggerSettings settings)
@@ -24,11 +24,12 @@ public sealed class FileMonitoringService : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(settings.WatchPath))
             throw new ArgumentException("Watch path must be provided", nameof(settings));
 
-        _filter = FileFilter.Create(settings.Filter.Kind, settings.Filter.Pattern);
+        _filters = BuildFilters(settings);
+        var watcherFilter = DetermineWatcherFilter(settings);
         _watcher = new FileSystemWatcher(settings.WatchPath)
         {
             IncludeSubdirectories = settings.IncludeSubfolders,
-            Filter = "*.*",
+            Filter = watcherFilter,
             NotifyFilter = NotifyFilters.FileName | NotifyFilters.CreationTime | NotifyFilters.DirectoryName
         };
 
@@ -37,15 +38,18 @@ public sealed class FileMonitoringService : IAsyncDisposable
         _watcher.Error += (_, args) => _eventChannel.Writer.TryWrite(new MonitoredFileEvent($"ERROR::{args.GetException()?.Message}", DateTime.Now));
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public async Task<int> StartAsync(CancellationToken cancellationToken)
     {
         var files = await Task.Run(() => EnumerateExistingFiles(), cancellationToken).ConfigureAwait(false);
+        var count = 0;
         foreach (var file in files)
         {
+            count++;
             _eventChannel.Writer.TryWrite(new MonitoredFileEvent(file, DateTime.Now));
         }
 
         _watcher.EnableRaisingEvents = true;
+        return count;
     }
 
     public IAsyncEnumerable<MonitoredFileEvent> GetEventsAsync(CancellationToken cancellationToken)
@@ -63,17 +67,59 @@ public sealed class FileMonitoringService : IAsyncDisposable
 
         return Directory
             .EnumerateFileSystemEntries(_settings.WatchPath, "*", searchOption)
-            .Where(_filter.Matches);
+            .Where(MatchesAll);
     }
 
     private void OnFileDetected(object sender, FileSystemEventArgs e)
     {
-        if (!_filter.Matches(e.FullPath))
+        if (!MatchesAll(e.FullPath))
         {
             return;
         }
 
         _eventChannel.Writer.TryWrite(new MonitoredFileEvent(e.FullPath, DateTime.Now));
+    }
+
+    private static IReadOnlyList<FileFilter> BuildFilters(FileTriggerSettings settings)
+    {
+        var filterSettings = settings.EffectiveFilters;
+        if (filterSettings.Count == 0)
+        {
+            return Array.Empty<FileFilter>();
+        }
+
+        return filterSettings
+            .Select(filter => FileFilter.Create(filter.Kind, filter.Pattern))
+            .ToArray();
+    }
+
+    private bool MatchesAll(string path)
+    {
+        if (_filters.Count == 0)
+        {
+            return true;
+        }
+
+        foreach (var filter in _filters)
+        {
+            if (!filter.Matches(path))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static string DetermineWatcherFilter(FileTriggerSettings settings)
+    {
+        var endsWithFilter = settings.EffectiveFilters
+            .FirstOrDefault(filter => string.Equals(filter.Kind, "endsWith", StringComparison.OrdinalIgnoreCase)
+                                      && !string.IsNullOrWhiteSpace(filter.Pattern));
+
+        return endsWithFilter is null
+            ? "*.*"
+            : $"*{endsWithFilter.Pattern}";
     }
 
     public async ValueTask DisposeAsync()

@@ -10,12 +10,16 @@
   "fileTrigger": {
     "watchPath": "Y:/temporary_files/JO/automation/ECL1",
     "includeSubfolders": true,
-    "instrumentType": "Thermo",
-    "acquisitionMinutes": 90,
-    "filter": {
-      "kind": "startsWith",
-      "pattern": "ECL1_HeLa_"
-    }
+    "filters": [
+      {
+        "kind": "startsWith",
+        "pattern": "ECL1_HeLa_"
+      },
+      {
+        "kind": "endsWith",
+        "pattern": ".raw"
+      }
+    ]
   },
   "schedule": {
     "cron": "0 0 6 ? * MON-FRI",

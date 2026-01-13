@@ -49,6 +49,93 @@ Automation Hub includes a robust process execution system that ensures jobs run 
 
 See **[PROCESS_EXECUTION.md](PROCESS_EXECUTION.md)** for detailed documentation and usage examples.
 
+### Automation Runtime 🕹️
+
+Automation Hub now spins up a runtime host when the WPF app launches:
+
+- **JobManifestLoader** reads every JSON job definition under `config/jobs` (or the shared `Y:` location) and reports schema errors without crashing the UI.
+- **AutomationRuntimeHost** wires each enabled job into the execution pipeline:
+   - File-triggered jobs get their own `FileTriggeredJobRunner`, which in turn uses `FileMonitoringService`.
+   - Scheduled jobs are registered with the lightweight `JobSchedulerService` (minute-level polling for now). 
+   - Manual jobs can still be launched through the monitor/orchestrator services.
+- **ProcessMonitorService** continues to track running/completed executions so the UI (and future dashboards) can render health/state.
+- **Job Settings Dialog** – Every row in the grid now has a _Settings…_ button. Users can edit the command, working directory, timeout, file-trigger folder/pattern/instrument, and acquisition minutes in-app. Saving writes the JSON back to disk and hot-reloads the runtime so new watchers take effect immediately.
+- **Add Job Button** – Use the _Add Job_ action in the header to create a brand-new manifest from the GUI. The app creates a default JSON file in the configured jobs directory and immediately opens the settings dialog so you can fill in details without touching the filesystem.
+- **Per-job Activity Log** – Each job now includes a _View Log_ button that opens a live feed of watcher events, scheduled triggers, and process outcomes with timestamps. Use it to confirm that a file-triggered job fired moments ago and is now waiting for the next matching file.
+
+### AutoQC-Style File Monitoring
+
+To mirror ProteoWizard AutoQC behavior, file-trigger jobs now benefit from:
+
+- A multi-filter engine: add as many `startsWith`, `endsWith`, `contains`, `regex`, or `All` tests as you need. They are combined with logical AND so you can require both the AutoQC prefix and the `.raw` suffix (or any other combination).
+- Reuse of these filters for the initial scan and live events, so the job ignores staging files that do not pass your entire rule set.
+- File-stability readiness: when a match is detected, Automation Hub waits for the file or directory to stay untouched for ~10 seconds before launching the job, reducing the chance of kicking off work while an instrument is still writing.
+- Graceful status reporting when a watch folder on a network share is unavailable—the job stays listed but surfaces a runtime warning instead of crashing the app.
+
+### Adding New Tasks
+
+1. Drop a JSON manifest into `config/jobs/` (or the shared `Y:\temporary_files\JO\automation\config\jobs`).
+2. Set `type` to any combination of `Manual`, `Scheduled`, and `FileTrigger`.
+3. Provide `process.command`, `workingDirectory`, and optional environment/timeout metadata.
+4. For file triggers, define `watchPath`, `includeSubfolders`, and a `filters` array (each entry specifies a `kind` + `pattern`). Combine filters to replicate AutoQC-style prefix + suffix matching.
+
+#### Example: LUM1 HeLa Runtime Trigger
+
+```
+{
+   "name": "JO LUM1 HeLa RT",
+   "type": "FileTrigger",
+   "enabled": true,
+   "process": {
+      "command": "Y:/temporary_files/JO/automation/JO_LUM1_HeLa_RT.bat",
+      "workingDirectory": "Y:/temporary_files/JO/automation",
+      "timeoutMinutes": 120
+   },
+   "fileTrigger": {
+      "watchPath": "Y:/msdata/2026/2026_01/LUM1",
+      "includeSubfolders": false,
+      "filters": [
+         {
+            "kind": "startsWith",
+            "pattern": "LUM1_HeLa_"
+         },
+         {
+            "kind": "endsWith",
+            "pattern": ".raw"
+         }
+      ]
+   }
+}
+```
+
+When a new `LUM1_HeLa_*.raw` dataset lands in `Y:\msdata\2026\2026_01\LUM1`, the runner waits briefly for the file to settle and then launches `JO_LUM1_HeLa_RT.bat`. Any issues (missing folder, invalid JSON, etc.) are surfaced in the status bar so you immediately know which jobs need attention.
+
+### Multi-command batch workflows
+
+Point `process.command` at a `.bat` file whenever you need to chain multiple commands (e.g., Skyline imports, report exports, and RoboCopy steps). Windows executes the batch file top-to-bottom, so you can encapsulate everything once in `config/jobs`:
+
+```
+cd C:\Users\s131945\AppData\Local\Apps\2.0\QQ4WYVGA.7BT\Q8666ON1.9TJ\skyl..tion_2e441fc3bf6adc7f_0017.0001_f0a1d88b2514a5aa
+set yyyy=%date:~10,5%
+set mm=%date:~4,2%
+SkylineCmd.exe --in="Y:/temporary_files/JO/bckup_proc_pc/E/AutoQC-UTSW/LUM1/Skyline AutoQC Lumos1.sky" --import-all="Y:/msdata/2026/%yyyy%_%mm%/LUM1" --import-filename-pattern="LUM1_HeLa_*" --save
+SkylineCmd.exe --in="Y:/temporary_files/JO/bckup_proc_pc/E/AutoQC-UTSW/LUM1/Skyline AutoQC Lumos1.sky" --report-name=JoeReport --report-conflict-resolution=overwrite --report-file="Y:/temporary_files/JO/bckup_proc_pc/E/AutoQC-UTSW/LUM1/LUM1_RT_Export.csv"
+robocopy "Y:/temporary_files/JO/bckup_proc_pc/E/AutoQC-UTSW/LUM1" "Y:/temporary_files/JO/bckup_proc_pc/E/AutoQC-UTSW/RetentionTimeExports" LUM1_RT_Export.csv
+robocopy "Y:/temporary_files/JO/bckup_proc_pc/E/AutoQC-UTSW/RetentionTimeExports" "Y:/temporary_files/JO/RetentionTimeExports2"
+```
+
+The GUI only needs to know the batch file path; the file itself can set environment variables, call SkylineCmd twice, and copy results to multiple folders without additional tooling.
+
+### Job Activity Log
+
+Pick any job row and click **View Log** to open a streaming activity window. The log captures:
+
+- File trigger lifecycle events (watcher started, waiting for files, detection of specific filenames)
+- Manual or scheduled kicks as soon as they occur
+- Process completion status directly from the orchestrator (success/failure messages)
+
+Entries are timestamped and retained in-memory (latest ~200 per job). Use this window to answer “what is this job doing right now?” without digging through the filesystem.
+
 ## Getting started
 
 ### For End Users (Running the Application)

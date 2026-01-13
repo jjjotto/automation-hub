@@ -82,8 +82,16 @@ To add a new automation job:
   "fileTrigger": {
     "watchPath": "C:\\path\\to\\watch",
     "includeSubfolders": true,
-    "instrumentType": "Thermo",
-    "acquisitionMinutes": 90
+      "filters": [
+         {
+            "kind": "startsWith",
+            "pattern": "Sample_"
+         },
+         {
+            "kind": "endsWith",
+            "pattern": ".raw"
+         }
+      ]
   },
   "schedule": {
     "cron": "0 0 6 ? * MON-FRI",

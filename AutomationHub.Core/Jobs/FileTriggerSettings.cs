@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace AutomationHub.Core.Jobs;
@@ -10,14 +12,32 @@ public sealed class FileTriggerSettings
     [JsonPropertyName("includeSubfolders")]
     public bool IncludeSubfolders { get; init; } = true;
 
-    [JsonPropertyName("instrumentType")]
-    public string InstrumentType { get; init; } = "Thermo";
-
-    [JsonPropertyName("acquisitionMinutes")]
-    public int AcquisitionMinutes { get; init; } = 60;
+    [JsonPropertyName("filters")]
+    public IReadOnlyList<FileFilterSettings>? Filters { get; init; }
 
     [JsonPropertyName("filter")]
-    public FileFilterSettings Filter { get; init; } = new();
+#pragma warning disable CA2227
+    public FileFilterSettings? LegacyFilter { get; init; }
+#pragma warning restore CA2227
+
+    [JsonIgnore]
+    public IReadOnlyList<FileFilterSettings> EffectiveFilters
+    {
+        get
+        {
+            if (Filters is { Count: > 0 } filters)
+            {
+                return filters;
+            }
+
+            if (LegacyFilter is not null)
+            {
+                return new[] { LegacyFilter };
+            }
+
+            return Array.Empty<FileFilterSettings>();
+        }
+    }
 }
 
 public sealed class FileFilterSettings

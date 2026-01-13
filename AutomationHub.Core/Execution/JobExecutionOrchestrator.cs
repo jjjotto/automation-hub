@@ -14,17 +14,27 @@ public sealed class JobExecutionOrchestrator
 {
     private readonly ProcessExecutionService _executionService;
     private readonly ProcessMonitorService _monitorService;
+    private readonly JobActivityLogService _activityLog;
+    private readonly JobStatusService _statusService;
 
-    public JobExecutionOrchestrator()
+    public JobExecutionOrchestrator(JobActivityLogService? activityLog = null, JobStatusService? statusService = null)
     {
         _executionService = new ProcessExecutionService();
         _monitorService = new ProcessMonitorService();
+        _activityLog = activityLog ?? new JobActivityLogService();
+        _statusService = statusService ?? new JobStatusService();
     }
 
-    public JobExecutionOrchestrator(ProcessExecutionService executionService, ProcessMonitorService monitorService)
+    public JobExecutionOrchestrator(
+        ProcessExecutionService executionService,
+        ProcessMonitorService monitorService,
+        JobActivityLogService? activityLog = null,
+        JobStatusService? statusService = null)
     {
         _executionService = executionService ?? throw new ArgumentNullException(nameof(executionService));
         _monitorService = monitorService ?? throw new ArgumentNullException(nameof(monitorService));
+        _activityLog = activityLog ?? new JobActivityLogService();
+        _statusService = statusService ?? new JobStatusService();
     }
 
     /// <summary>
@@ -40,6 +50,7 @@ public sealed class JobExecutionOrchestrator
         // Check if job is already running
         if (_monitorService.IsJobRunning(job.Name))
         {
+            _statusService.Update(job.Name, "Already running");
             return new JobRunResult(
                 job.Name,
                 DateTime.Now,
@@ -52,6 +63,7 @@ public sealed class JobExecutionOrchestrator
         var validationErrors = job.Validate().ToList();
         if (validationErrors.Any())
         {
+            _statusService.Update(job.Name, "Validation failed");
             return new JobRunResult(
                 job.Name,
                 DateTime.Now,
@@ -67,6 +79,8 @@ public sealed class JobExecutionOrchestrator
             // Register job as running
             _monitorService.RegisterRunningJob(job.Name, startTime);
             _monitorService.UpdateJobStatus(job.Name, "Starting process...");
+            _activityLog.Append(job.Name, "Process starting");
+            _statusService.Update(job.Name, "Process starting");
 
             // Execute the job process
             var result = await _executionService.ExecuteAsync(
@@ -75,7 +89,10 @@ public sealed class JobExecutionOrchestrator
                 cancellationToken);
 
             // Update final status
-            _monitorService.UpdateJobStatus(job.Name, result.Success ? "Completed successfully" : "Failed");
+            var completionMessage = result.Success ? "Completed successfully" : "Failed";
+            _monitorService.UpdateJobStatus(job.Name, completionMessage);
+            _activityLog.Append(job.Name, result.Success ? "Process completed successfully" : $"Process failed: {result.Message}");
+            _statusService.Update(job.Name, result.Success ? "Idle" : $"Error: {result.Message}");
 
             // Move to completed history
             _monitorService.CompleteJob(result);
@@ -92,6 +109,8 @@ public sealed class JobExecutionOrchestrator
                 message: $"Unexpected error: {ex.Message}");
 
             _monitorService.CompleteJob(errorResult);
+            _activityLog.Append(job.Name, $"Process crashed: {ex.Message}");
+            _statusService.Update(job.Name, $"Error: {ex.Message}");
             return errorResult;
         }
     }
@@ -100,6 +119,10 @@ public sealed class JobExecutionOrchestrator
     /// Gets the monitor service for accessing job status information.
     /// </summary>
     public ProcessMonitorService Monitor => _monitorService;
+
+    public JobActivityLogService ActivityLog => _activityLog;
+
+    public JobStatusService StatusService => _statusService;
 
     /// <summary>
     /// Checks for jobs that may be stuck and returns their information.
