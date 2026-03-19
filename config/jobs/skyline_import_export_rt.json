@@ -1,0 +1,18 @@
+{
+  "name": "Skyline Import & RT Export (All Instruments)",
+  "type": "ManualAndScheduled",
+  "enabled": false,
+  "process": {
+    "command": "C:\\automation-hub\\AutoRunScripts\\Batch_ImportNew_ExportRT.bat",
+    "workingDirectory": "C:\\Program Files\\Skyline",
+    "timeoutMinutes": 90
+  },
+  "schedule": {
+    "cron": "0 0 6 ? * MON-FRI",
+    "timezone": "Central Standard Time",
+    "startPaused": true
+  },
+  "outputLog": "Y:/temporary_files/JO/keep/AutoQC-UTSW/logs/skyline_import_export_rt.log",
+  "tags": ["skyline", "autoqc", "retention-time"],
+  "notes": "Runs SkylineCmd to import new HeLa QC .raw files for LUM1, LUM2, QEX2, ECL1, QEX3, OAZ1 and exports JoeReport RT CSVs. Script builds the Y:/msdata/2026/yyyy_mm path dynamically from the system date - must be run as a .bat. Update the script path to match the final deployment location. Requires Y:\\ and network drives to be mounted."
+}

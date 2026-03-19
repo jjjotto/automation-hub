@@ -81,6 +81,25 @@
                 </StackPanel>
             </GroupBox>
 
+            <GroupBox Header="Schedule" Padding="12" Visibility="{Binding IsScheduleVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel Orientation="Vertical">
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="Cron Expression" Width="120" VerticalAlignment="Center" />
+                        <TextBox Text="{Binding Schedule.CronExpression}" Width="320" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="Time Zone" Width="120" VerticalAlignment="Center" />
+                        <TextBox Text="{Binding Schedule.TimeZoneId}" Width="320" />
+                    </StackPanel>
+                    <CheckBox Content="Start paused" IsChecked="{Binding Schedule.StartPaused}" Margin="0,6,0,0" />
+                    <TextBlock Text="Example cron: 0 0 6 ? * MON-FRI (weekdays at 6:00 AM)"
+                               Margin="0,8,0,0"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Width="380" />
+                </StackPanel>
+            </GroupBox>
+
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
                 <Button Content="Save" Width="100" Click="OnSaveClicked" />
                 <Button Content="Cancel" Width="100" Click="OnCancelClicked" />

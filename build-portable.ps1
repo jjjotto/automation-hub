@@ -1,4 +1,4 @@
-# Build Portable Distribution for Automation Hub
+﻿# Build Portable Distribution for Automation Hub
 # This script creates a ZIP file that can be distributed without an installer
 
 param(
@@ -22,9 +22,9 @@ $PortableDir = Join-Path $SolutionDir "portable-output"
 Write-Host "Checking for .NET SDK..." -ForegroundColor Yellow
 try {
     $dotnetVersion = dotnet --version
-    Write-Host "✓ .NET SDK version $dotnetVersion found" -ForegroundColor Green
+    Write-Host "[OK]  .NET SDK version $dotnetVersion found" -ForegroundColor Green
 } catch {
-    Write-Host "✗ .NET SDK not found. Please install .NET 8.0 SDK or later." -ForegroundColor Red
+    Write-Host "[FAIL] .NET SDK not found. Please install .NET 8.0 SDK or later." -ForegroundColor Red
     Write-Host "  Download from: https://dotnet.microsoft.com/download/dotnet/8.0" -ForegroundColor Yellow
     exit 1
 }
@@ -59,11 +59,11 @@ Write-Host "Running: dotnet $($publishArgs -join ' ')" -ForegroundColor Gray
 & dotnet @publishArgs
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "✗ Build failed!" -ForegroundColor Red
+    Write-Host "[FAIL] Build failed!" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "✓ Build completed successfully" -ForegroundColor Green
+Write-Host "[OK]  Build completed successfully" -ForegroundColor Green
 
 # Create portable package directory
 Write-Host ""
@@ -179,7 +179,7 @@ try {
     [System.IO.Compression.ZipFile]::CreateFromDirectory($PortableDir, $ZipPath, 'Optimal', $false)
 }
 
-Write-Host "✓ ZIP archive created" -ForegroundColor Green
+Write-Host "[OK]  ZIP archive created" -ForegroundColor Green
 
 # Cleanup temporary directory
 Remove-Item $PortableDir -Recurse -Force
@@ -187,7 +187,7 @@ Remove-Item $PortableDir -Recurse -Force
 Write-Host ""
 Write-Host "=== Build Complete ===" -ForegroundColor Green
 Write-Host ""
-Write-Host "✓ Portable package created successfully!" -ForegroundColor Green
+Write-Host "[OK]  Portable package created successfully!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Package location:" -ForegroundColor Yellow
 $ZipFile = Get-Item $ZipPath

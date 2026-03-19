@@ -38,36 +38,15 @@ public sealed class FileMonitoringService : IAsyncDisposable
         _watcher.Error += (_, args) => _eventChannel.Writer.TryWrite(new MonitoredFileEvent($"ERROR::{args.GetException()?.Message}", DateTime.Now));
     }
 
-    public async Task<int> StartAsync(CancellationToken cancellationToken)
+    public Task<int> StartAsync(CancellationToken cancellationToken)
     {
-        var files = await Task.Run(() => EnumerateExistingFiles(), cancellationToken).ConfigureAwait(false);
-        var count = 0;
-        foreach (var file in files)
-        {
-            count++;
-            _eventChannel.Writer.TryWrite(new MonitoredFileEvent(file, DateTime.Now));
-        }
-
         _watcher.EnableRaisingEvents = true;
-        return count;
+        return Task.FromResult(0);
     }
 
     public IAsyncEnumerable<MonitoredFileEvent> GetEventsAsync(CancellationToken cancellationToken)
     {
         return _eventChannel.Reader.ReadAllAsync(cancellationToken);
-    }
-
-    private IEnumerable<string> EnumerateExistingFiles()
-    {
-        var searchOption = _settings.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-        if (!Directory.Exists(_settings.WatchPath))
-        {
-            return Enumerable.Empty<string>();
-        }
-
-        return Directory
-            .EnumerateFileSystemEntries(_settings.WatchPath, "*", searchOption)
-            .Where(MatchesAll);
     }
 
     private void OnFileDetected(object sender, FileSystemEventArgs e)

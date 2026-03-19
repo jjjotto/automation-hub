@@ -135,12 +135,9 @@ public sealed class FileTriggeredJobRunner : IAsyncDisposable
         }
     }
 
-    public async ValueTask DisposeAsync()
+    public async Task StopAsync()
     {
-        if (_cts is not null)
-        {
-            _cts.Cancel();
-        }
+        _cts?.Cancel();
 
         if (_processingTask is not null)
         {
@@ -155,6 +152,12 @@ public sealed class FileTriggeredJobRunner : IAsyncDisposable
 
         await _monitoringService.DisposeAsync().ConfigureAwait(false);
         _cts?.Dispose();
+        _cts = null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await StopAsync().ConfigureAwait(false);
     }
 
     private void Log(string message)

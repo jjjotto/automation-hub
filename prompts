@@ -1,0 +1,7 @@
+I am starting to gather scripts and batch files that I want to monitor and use.  For right now the path is "C:\automation-hub\AutoRunScripts"  This will not be the final path, but the scripts there are ones that I'll likely use.  Review them and see how they could be implemented in this tool.
+
+I'm trying to build the portable version of this application but it isn't working.
+
+There should be an option to remove jobs that are listed.  Also, you should be able to check a checkbox beside each job and handle all the checked processes the same way.  A user could remove the jobs, start the jobs, pause, force stop, etc.  If a job is running, it should have a read out in the GUI showing what the current status is.  It might say "processing " and the file name, or "waiting for new files" or "next run at TIME", or "stopped", etc
+
+If I make a task and select scheduled or hybrid, I should be able to set some type of schedule for it.  If it is manual, I should be able to click the "run" if i select it

@@ -17,8 +17,8 @@ public sealed class AutomationRuntimeHost : IAsyncDisposable
     private readonly JobStatusService _statusService = new();
     private readonly JobExecutionOrchestrator _orchestrator;
     private readonly JobSchedulerService _scheduler = new();
-    private readonly List<FileTriggeredJobRunner> _fileRunners = new();
-    private readonly List<ScheduledJobHandle> _scheduledHandles = new();
+    private readonly Dictionary<string, FileTriggeredJobRunner> _fileRunners = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ScheduledJobHandle> _scheduledHandles = new(StringComparer.OrdinalIgnoreCase);
     private readonly CancellationTokenSource _cts = new();
     private readonly List<string> _runtimeErrors = new();
 
@@ -77,7 +77,7 @@ public sealed class AutomationRuntimeHost : IAsyncDisposable
                     {
                         var runner = new FileTriggeredJobRunner(job, _orchestrator, _activityLog, _statusService);
                         await runner.StartAsync(_cts.Token).ConfigureAwait(false);
-                        _fileRunners.Add(runner);
+                        _fileRunners[job.Name] = runner;
                         _activityLog.Append(job.Name, $"File trigger active on '{job.FileTrigger.WatchPath}'.");
                         _statusService.Update(job.Name, "File trigger active - waiting for files");
                     }
@@ -107,7 +107,7 @@ public sealed class AutomationRuntimeHost : IAsyncDisposable
                             : $"Error: {result.Message}");
                     }, _cts.Token);
 
-                    _scheduledHandles.Add(handle);
+                    _scheduledHandles[job.Name] = handle;
                     _activityLog.Append(job.Name, "Schedule registered and active.");
                     _statusService.Update(job.Name, "Scheduled - waiting for next run");
                 }
@@ -142,11 +142,42 @@ public sealed class AutomationRuntimeHost : IAsyncDisposable
         return _orchestrator.ExecuteJobAsync(job, cancellationToken);
     }
 
+    public async Task StopJobAsync(string jobName)
+    {
+        if (_fileRunners.TryGetValue(jobName, out var runner))
+        {
+            await runner.StopAsync().ConfigureAwait(false);
+            _fileRunners.Remove(jobName);
+        }
+
+        if (_scheduledHandles.TryGetValue(jobName, out var handle))
+        {
+            await handle.StopAsync().ConfigureAwait(false);
+            _scheduledHandles.Remove(jobName);
+        }
+
+        _activityLog.Append(jobName, "Job stopped by user.");
+        _statusService.Update(jobName, "Stopped");
+    }
+
+    public async Task RemoveJobAsync(string jobName)
+    {
+        await StopJobAsync(jobName).ConfigureAwait(false);
+
+        var entry = JobEntries.FirstOrDefault(e => string.Equals(e.Job.Name, jobName, StringComparison.OrdinalIgnoreCase));
+        if (entry is not null && File.Exists(entry.FilePath))
+            File.Delete(entry.FilePath);
+
+        var loadResult = JobManifestLoader.LoadAll();
+        JobEntries = loadResult.Entries;
+        JobLoadErrors = loadResult.Errors;
+    }
+
     public async ValueTask DisposeAsync()
     {
         _cts.Cancel();
 
-        foreach (var handle in _scheduledHandles)
+        foreach (var handle in _scheduledHandles.Values)
         {
             try
             {
@@ -157,9 +188,9 @@ public sealed class AutomationRuntimeHost : IAsyncDisposable
             }
         }
 
-        foreach (var runner in _fileRunners)
+        foreach (var runner in _fileRunners.Values)
         {
-            await runner.DisposeAsync().ConfigureAwait(false);
+            await runner.StopAsync().ConfigureAwait(false);
         }
 
         _cts.Dispose();

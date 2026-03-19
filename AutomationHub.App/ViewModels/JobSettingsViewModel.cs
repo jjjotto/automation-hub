@@ -25,7 +25,7 @@ public sealed class JobSettingsViewModel : INotifyPropertyChanged
 
         Process = JobProcessSettingsViewModel.FromSettings(source.Process);
         FileTrigger = FileTriggerSettingsViewModel.FromSettings(source.FileTrigger);
-        Schedule = source.Schedule;
+        Schedule = ScheduleSettingsViewModel.FromSettings(source.Schedule);
         Tags = source.Tags;
         Notes = source.Notes;
         OutputLogPath = source.OutputLogPath;
@@ -36,8 +36,8 @@ public sealed class JobSettingsViewModel : INotifyPropertyChanged
     public string ManifestPath { get; }
     public JobProcessSettingsViewModel Process { get; }
     public FileTriggerSettingsViewModel FileTrigger { get; }
+    public ScheduleSettingsViewModel Schedule { get; }
 
-    public ScheduleSettings? Schedule { get; }
     public IReadOnlyCollection<string>? Tags { get; }
     public string? Notes { get; }
     public string? OutputLogPath { get; }
@@ -69,6 +69,7 @@ public sealed class JobSettingsViewModel : INotifyPropertyChanged
     }
 
     public bool IsFileTriggerVisible => Type.HasFlag(JobType.FileTrigger);
+    public bool IsScheduleVisible => Type.HasFlag(JobType.Scheduled);
 
     public JobDefinition ToJobDefinition()
     {
@@ -79,7 +80,7 @@ public sealed class JobSettingsViewModel : INotifyPropertyChanged
             Type = Type,
             Process = Process.ToSettings(),
             FileTrigger = Type.HasFlag(JobType.FileTrigger) ? FileTrigger.ToSettings() : null,
-            Schedule = _originalJob.Schedule,
+            Schedule = Type.HasFlag(JobType.Scheduled) ? Schedule.ToSettings() : null,
             OutputLogPath = _originalJob.OutputLogPath,
             Tags = _originalJob.Tags,
             Notes = _originalJob.Notes
@@ -104,8 +105,72 @@ public sealed class JobSettingsViewModel : INotifyPropertyChanged
         if (propertyName == nameof(Type))
         {
             OnPropertyChanged(nameof(IsFileTriggerVisible));
+            OnPropertyChanged(nameof(IsScheduleVisible));
         }
 
+        return true;
+    }
+}
+
+public sealed class ScheduleSettingsViewModel : INotifyPropertyChanged
+{
+    private string _cronExpression = "0 0 6 ? * MON-FRI";
+    private string _timeZoneId = "Central Standard Time";
+    private bool _startPaused;
+
+    public static ScheduleSettingsViewModel FromSettings(ScheduleSettings? settings)
+    {
+        settings ??= new ScheduleSettings();
+        return new ScheduleSettingsViewModel
+        {
+            _cronExpression = string.IsNullOrWhiteSpace(settings.CronExpression) ? "0 0 6 ? * MON-FRI" : settings.CronExpression,
+            _timeZoneId = string.IsNullOrWhiteSpace(settings.TimeZoneId) ? "Central Standard Time" : settings.TimeZoneId,
+            _startPaused = settings.StartPaused
+        };
+    }
+
+    public string CronExpression
+    {
+        get => _cronExpression;
+        set => SetField(ref _cronExpression, value);
+    }
+
+    public string TimeZoneId
+    {
+        get => _timeZoneId;
+        set => SetField(ref _timeZoneId, value);
+    }
+
+    public bool StartPaused
+    {
+        get => _startPaused;
+        set => SetField(ref _startPaused, value);
+    }
+
+    public ScheduleSettings ToSettings()
+    {
+        return new ScheduleSettings
+        {
+            CronExpression = string.IsNullOrWhiteSpace(CronExpression) ? "0 0 6 ? * MON-FRI" : CronExpression,
+            TimeZoneId = string.IsNullOrWhiteSpace(TimeZoneId) ? "Central Standard Time" : TimeZoneId,
+            StartPaused = StartPaused
+        };
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+    private bool SetField<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(storage, value))
+        {
+            return false;
+        }
+
+        storage = value;
+        OnPropertyChanged(propertyName);
         return true;
     }
 }

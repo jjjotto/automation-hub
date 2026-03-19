@@ -111,4 +111,61 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             target?.UpdateStatus(e.Message);
         });
     }
+
+    public void StartCheckedJobs()
+    {
+        var host = (Application.Current as App)?.RuntimeHost;
+        if (host is null) return;
+
+        var selected = Jobs.Where(j => j.IsChecked).ToList();
+        var runnable = selected.Where(j => j.Job.Type.HasFlag(Core.Jobs.JobType.Manual)).ToList();
+        var skipped = selected.Count - runnable.Count;
+
+        foreach (var item in runnable)
+            _ = host.RunJobAsync(item.Job.Name);
+
+        if (selected.Count == 0)
+        {
+            StatusMessage = "No jobs selected.";
+            return;
+        }
+
+        if (runnable.Count == 0)
+        {
+            StatusMessage = "Selected job(s) are not manual-capable. Enable Manual or Hybrid type to run on demand.";
+            return;
+        }
+
+        StatusMessage = skipped > 0
+            ? $"Manual run started for {runnable.Count} job(s). Skipped {skipped} non-manual job(s)."
+            : $"Manual run started for {runnable.Count} job(s).";
+    }
+
+    public async Task StopCheckedJobsAsync()
+    {
+        var host = (Application.Current as App)?.RuntimeHost;
+        if (host is null) return;
+
+        foreach (var item in Jobs.Where(j => j.IsChecked).ToList())
+            await host.StopJobAsync(item.Job.Name);
+
+        StatusMessage = "Selected jobs stopped.";
+    }
+
+    public async Task RemoveCheckedJobsAsync()
+    {
+        var host = (Application.Current as App)?.RuntimeHost;
+        if (host is null) return;
+
+        foreach (var item in Jobs.Where(j => j.IsChecked).ToList())
+            await host.RemoveJobAsync(item.Job.Name);
+
+        LoadJobs();
+    }
+
+    public void SetAllChecked(bool isChecked)
+    {
+        foreach (var job in Jobs)
+            job.IsChecked = isChecked;
+    }
 }

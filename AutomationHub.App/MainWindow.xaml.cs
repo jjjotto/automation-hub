@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using AutomationHub.App.ViewModels;
 using AutomationHub.App.Views;
 using AutomationHub.Core.Configuration;
@@ -124,5 +126,45 @@ public partial class MainWindow : Window
         };
 
         window.Show();
+    }
+
+    private void OnStartCheckedClicked(object sender, RoutedEventArgs e)
+    {
+        _viewModel.StartCheckedJobs();
+    }
+
+    private async void OnStopCheckedClicked(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.StopCheckedJobsAsync();
+    }
+
+    private async void OnRemoveCheckedClicked(object sender, RoutedEventArgs e)
+    {
+        var checkedJobs = new List<string>();
+        foreach (var job in _viewModel.Jobs)
+        {
+            if (job.IsChecked)
+                checkedJobs.Add(job.Job.Name);
+        }
+
+        if (checkedJobs.Count == 0)
+            return;
+
+        var names = "  \u2022 " + string.Join("\n  \u2022 ", checkedJobs);
+        var result = MessageBox.Show(
+            this,
+            $"Permanently remove {checkedJobs.Count} job(s)?\n\n{names}\n\nThis will delete their configuration files and cannot be undone.",
+            "Remove Jobs",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result == MessageBoxResult.Yes)
+            await _viewModel.RemoveCheckedJobsAsync();
+    }
+
+    private void OnToggleSelectAll(object sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox cb)
+            _viewModel.SetAllChecked(cb.IsChecked == true);
     }
 }

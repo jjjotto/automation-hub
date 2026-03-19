@@ -1,0 +1,1 @@
+powershell.exe -ExecutionPolicy Bypass -File "C:\automation-hub\build-portable.ps1"
