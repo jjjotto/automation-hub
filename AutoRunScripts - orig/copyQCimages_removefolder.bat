@@ -1,0 +1,1 @@
+"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" "-Command" "if((Get-ExecutionPolicy ) -ne 'AllSigned'){Set-ExecutionPolicy -Scope Process Bypass }; & 'Y:\temporary_files\JO\keep\AutoRunScripts\copyQCjpegs_removefolder.ps1'"

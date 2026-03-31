@@ -11,7 +11,6 @@ namespace AutomationHub.App.ViewModels;
 public sealed class JobSettingsViewModel : INotifyPropertyChanged
 {
     private string _name = string.Empty;
-    private bool _enabled;
     private JobType _type;
 
     public JobSettingsViewModel(JobDefinition source, string manifestPath)
@@ -20,7 +19,6 @@ public sealed class JobSettingsViewModel : INotifyPropertyChanged
         _originalJob = source;
 
         _name = source.Name;
-        _enabled = source.Enabled;
         _type = source.Type;
 
         Process = JobProcessSettingsViewModel.FromSettings(source.Process);
@@ -56,12 +54,6 @@ public sealed class JobSettingsViewModel : INotifyPropertyChanged
         set => SetField(ref _name, value);
     }
 
-    public bool Enabled
-    {
-        get => _enabled;
-        set => SetField(ref _enabled, value);
-    }
-
     public JobType Type
     {
         get => _type;
@@ -76,7 +68,7 @@ public sealed class JobSettingsViewModel : INotifyPropertyChanged
         return new JobDefinition
         {
             Name = Name,
-            Enabled = Enabled,
+            Enabled = true,
             Type = Type,
             Process = Process.ToSettings(),
             FileTrigger = Type.HasFlag(JobType.FileTrigger) ? FileTrigger.ToSettings() : null,

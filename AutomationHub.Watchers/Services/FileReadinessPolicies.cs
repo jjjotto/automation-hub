@@ -17,6 +17,8 @@ internal sealed class FileStabilityReadinessPolicy : IFileReadinessPolicy
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan MissingTolerance = TimeSpan.FromSeconds(30);
 
+    private readonly record struct TargetSnapshot(int FileCount, long TotalBytes, DateTime MaxLastWriteUtc);
+
     public static FileStabilityReadinessPolicy Instance { get; } = new();
 
     private FileStabilityReadinessPolicy()
@@ -31,6 +33,8 @@ internal sealed class FileStabilityReadinessPolicy : IFileReadinessPolicy
         }
 
         var firstSeen = DateTime.UtcNow;
+        TargetSnapshot? lastSnapshot = null;
+        DateTime? stableSince = null;
 
         while (true)
         {
@@ -42,10 +46,28 @@ internal sealed class FileStabilityReadinessPolicy : IFileReadinessPolicy
                 {
                     throw new FileNotFoundException($"File or directory '{path}' no longer exists.");
                 }
+
+                // Target disappeared while waiting; reset stability tracking.
+                lastSnapshot = null;
+                stableSince = null;
             }
-            else if (HasSettled(path))
+            else if (TryGetSnapshot(path, out var currentSnapshot))
             {
-                return;
+                if (lastSnapshot is null || currentSnapshot != lastSnapshot.Value)
+                {
+                    lastSnapshot = currentSnapshot;
+                    stableSince = DateTime.UtcNow;
+                }
+                else if (stableSince is not null && DateTime.UtcNow - stableSince.Value >= StabilityWindow)
+                {
+                    return;
+                }
+            }
+            else
+            {
+                // Unable to read target metadata (transient lock/access race). Keep waiting.
+                lastSnapshot = null;
+                stableSince = null;
             }
 
             await Task.Delay(PollInterval, cancellationToken).ConfigureAwait(false);
@@ -54,17 +76,61 @@ internal sealed class FileStabilityReadinessPolicy : IFileReadinessPolicy
 
     private static bool TargetExists(string path) => File.Exists(path) || Directory.Exists(path);
 
-    private static bool HasSettled(string path)
+    private static bool TryGetSnapshot(string path, out TargetSnapshot snapshot)
     {
+        snapshot = default;
+
         if (Directory.Exists(path))
         {
-            return DateTime.UtcNow - Directory.GetLastWriteTimeUtc(path) >= StabilityWindow;
+            try
+            {
+                var maxLastWrite = Directory.GetLastWriteTimeUtc(path);
+                var totalBytes = 0L;
+                var fileCount = 0;
+
+                foreach (var filePath in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+                {
+                    var fileInfo = new FileInfo(filePath);
+                    if (!fileInfo.Exists)
+                    {
+                        continue;
+                    }
+
+                    fileCount++;
+                    totalBytes += fileInfo.Length;
+
+                    if (fileInfo.LastWriteTimeUtc > maxLastWrite)
+                    {
+                        maxLastWrite = fileInfo.LastWriteTimeUtc;
+                    }
+                }
+
+                snapshot = new TargetSnapshot(fileCount, totalBytes, maxLastWrite);
+                return true;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
         }
 
         try
         {
-            var lastWrite = File.GetLastWriteTimeUtc(path);
-            return DateTime.UtcNow - lastWrite >= StabilityWindow;
+            var fileInfo = new FileInfo(path);
+            if (!fileInfo.Exists)
+            {
+                return false;
+            }
+
+            snapshot = new TargetSnapshot(
+                FileCount: 1,
+                TotalBytes: fileInfo.Length,
+                MaxLastWriteUtc: fileInfo.LastWriteTimeUtc);
+            return true;
         }
         catch (IOException)
         {

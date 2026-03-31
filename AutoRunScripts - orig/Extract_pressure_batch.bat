@@ -1,0 +1,1 @@
+"C:\Program Files\R\R-4.2.0\bin\Rscript.exe" "Y:\temporary_files\JO\keep\AutoRunScripts\Extract_pressure_withOAZ1.R"

@@ -20,9 +20,9 @@ currentdate<-strsplit(currentdate, split ="-")
 currentdate<-unlist(currentdate)
 yearmonth<-paste(currentdate[1],"_",currentdate[2], sep = "")
 
-scansummary_path <- "Y:/temporary_files/JO/keep/scansummary.csv"
-processed_txt_path <- "Y:/temporary_files/JO/keep/txt_processed"
-msdata_root <- paste("Y:/msdata/2026/", yearmonth, sep="")
+scansummary_path <- "Y:/temporary_files/JO/keep/AutoRunScripts/outputs/scansummary.csv"
+processed_txt_path <- "Y:/temporary_files/JO/keep/AutoRunScripts/outputs/txt_processed"
+msdata_root <- paste("Y:/temporary_files/JO/candeletey/msdata_temp/2026/", yearmonth, sep="")
 
 if (!dir.exists(processed_txt_path)) {
   dir.create(processed_txt_path, recursive = TRUE)
@@ -42,6 +42,11 @@ if (!file.exists(scansummary_path)) {
 }
 
 scansummary<-read.csv(scansummary_path, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
+
+# If scansummary is empty or has no data rows, ensure filename column exists and is character
+if (nrow(scansummary) == 0) {
+  scansummary <- data.frame(filename = character(), stringsAsFactors = FALSE)
+}
 
 if (!dir.exists(msdata_root)) {
   message("Data folder not found, nothing to process: ", msdata_root)
@@ -76,6 +81,86 @@ if (nrow(filestoprocess) == 0) {
 
 filestoprocess$filename<-NULL
 filestoprocess<-normalizePath(filestoprocess$mydffull, winslash = "/", mustWork = FALSE)
+
+# ---------------------------------------------------------------------------
+# File readiness check
+#
+# Strategy (mirrors AutomationHub.Watchers FileStabilityReadinessPolicy):
+#   1. Poll the file every POLL_SECS seconds.
+#   2. Track file size. If size changes, reset the stability timer.
+#   3. Additionally try to open the file for reading (shared lock check).
+#      On Windows, a file still being written by another process is often
+#      exclusively locked; if we can open it we know the OS has released it.
+#   4. Once the size has been stable AND the file has been openable for
+#      STABILITY_SECS consecutive seconds, consider it ready.
+#   5. Give up and return FALSE after MAX_WAIT_SECS total wait.
+# ---------------------------------------------------------------------------
+wait_until_file_ready <- function(path,
+                                  stability_secs = 60,
+                                  poll_secs      = 5,
+                                  max_wait_secs  = 1800) {
+  if (!file.exists(path)) {
+    message("  [readiness] File not found: ", path)
+    return(FALSE)
+  }
+
+  stable_since   <- NULL
+  last_size      <- -1
+  elapsed        <- 0
+
+  repeat {
+    if (!file.exists(path)) {
+      message("  [readiness] File disappeared while waiting: ", path)
+      return(FALSE)
+    }
+
+    current_size <- tryCatch(file.info(path)$size, error = function(e) -1)
+
+    if (is.na(current_size) || current_size < 0) {
+      # Cannot stat — file may be transitionally locked; keep waiting
+      stable_since <- NULL
+    } else if (current_size != last_size) {
+      # Size changed — file is still being written
+      if (!is.null(stable_since)) {
+        message("  [readiness] Size changed (", last_size, " -> ", current_size,
+                " bytes), resetting stability timer: ", basename(path))
+      }
+      last_size    <- current_size
+      stable_since <- NULL
+    } else {
+      # Size unchanged — try to open the file to confirm it is not locked
+      can_open <- tryCatch({
+        con <- file(path, open = "rb")
+        close(con)
+        TRUE
+      }, error = function(e) FALSE)
+
+      if (can_open) {
+        if (is.null(stable_since)) {
+          stable_since <- proc.time()[["elapsed"]]
+        }
+        secs_stable <- proc.time()[["elapsed"]] - stable_since
+        if (secs_stable >= stability_secs) {
+          message("  [readiness] File ready after ", round(elapsed + secs_stable),
+                  "s stable: ", basename(path))
+          return(TRUE)
+        }
+      } else {
+        # File still locked — reset stability timer
+        stable_since <- NULL
+      }
+    }
+
+    if (elapsed >= max_wait_secs) {
+      message("  [readiness] Timed out after ", max_wait_secs,
+              "s waiting for file to be ready: ", basename(path))
+      return(FALSE)
+    }
+
+    Sys.sleep(poll_secs)
+    elapsed <- elapsed + poll_secs
+  }
+}
 
 # Define the path to the msconvert executable
 msconvert_path <- '"C:/Program Files/ProteoWizard/ProteoWizard 3.0.24164.38d6037/msconvert.exe"'
@@ -332,7 +417,7 @@ process_txt_file <- function(txt_file) {
     numms3 <- NA
   }
 
-  jpg_dir <- file.path(dirname(txt_file), "jpg")
+  jpg_dir <- file.path("Y:/temporary_files/JO/keep/AutoRunScripts/outputs/jpg", instrument)
   if (!dir.exists(jpg_dir)) {
     dir.create(jpg_dir, recursive = TRUE)
   }
@@ -387,6 +472,13 @@ for (i in seq_along(filestoprocess)) {
   raw_dir <- dirname(raw_file)
   if (!dir.exists(raw_dir)) {
     message("Directory missing, skipping: ", raw_dir)
+    next
+  }
+
+  # Wait until the file is fully written before processing
+  message("  Checking file readiness: ", basename(raw_file))
+  if (!wait_until_file_ready(raw_file)) {
+    message("  Skipping file (not ready / timed out): ", basename(raw_file))
     next
   }
 

@@ -5,3 +5,21 @@ I'm trying to build the portable version of this application but it isn't workin
 There should be an option to remove jobs that are listed.  Also, you should be able to check a checkbox beside each job and handle all the checked processes the same way.  A user could remove the jobs, start the jobs, pause, force stop, etc.  If a job is running, it should have a read out in the GUI showing what the current status is.  It might say "processing " and the file name, or "waiting for new files" or "next run at TIME", or "stopped", etc
 
 If I make a task and select scheduled or hybrid, I should be able to set some type of schedule for it.  If it is manual, I should be able to click the "run" if i select it
+
+In the AutoRunScripts folder there are a set of batch scripts to run various functions.  I want to see if I can standardize the output location from these scripts.  For testing purposes, the outputs from all these scripts should go to "Y:\temporary_files\JO\keep\AutoRunScripts\outputs"  I've also setup raw data files for testing in "Y:\temporary_files\JO\candeletey\msdata_temp" The folder structure inside this folder mirrors what the real folder structure is.  For example, real raw data is in msdata\YEAR\YEAR_MM\INSTRUMENT, for testing the data is at Y:\temporary_files\JO\candeletey\msdata_temp\YEAR\YEAR_MM\INSTRUMENT"
+edit the scripts so that all the output is in the standard location and where raw data is read in the scripts use the testing locations set above, run the scripts, and i will check the results
+
+run the scripts again and ensure the jpg that is output from the Extract_pressure_withOAZ1.R for each raw ms file stays in the jpg folder within the instrument folder
+
+Because many of the raw files are large, they may appear in the directory prior to the file being fully copied into that directory.  The file may still be in the process of copying to the directory.  If the trigger to run a script is a file, there should be some way to ensure the file is not still being copied before the processing of that file starts.
+
+The "enabled" checkbox can be removed from the application.
+
+I've stopped the task that is in the queue and I am not able to start it again.  It won't start.
+
+I'm testing this "C:\WebApps\automation-hub\AutoRunScripts\Batch_ImportNew_ExportRT.bat"  The application says it is detecting if the file is stable, but it still tries to start it immediately and the file is still copying into the location.
+
+The task I have set is triggering for new files, but i'm getting the error "Failed to start process" for this script "C:\WebApps\automation-hub\AutoRunScripts\Batch_ImportNew_ExportRT.bat".  I'm not seeing any additional error logging so I'm not sure what's happening.
+
+##########################
+the AutoRunScripts\Batch_ImportNew_ExportRT.bat and AutoRunScripts\Extract_pressure_batch.bat run applications that include all the instruments in our lab.  Split out the steps for each 

@@ -118,27 +118,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         if (host is null) return;
 
         var selected = Jobs.Where(j => j.IsChecked).ToList();
-        var runnable = selected.Where(j => j.Job.Type.HasFlag(Core.Jobs.JobType.Manual)).ToList();
-        var skipped = selected.Count - runnable.Count;
-
-        foreach (var item in runnable)
-            _ = host.RunJobAsync(item.Job.Name);
-
         if (selected.Count == 0)
         {
             StatusMessage = "No jobs selected.";
             return;
         }
 
-        if (runnable.Count == 0)
-        {
-            StatusMessage = "Selected job(s) are not manual-capable. Enable Manual or Hybrid type to run on demand.";
-            return;
-        }
+        foreach (var item in selected)
+            _ = host.RestartJobAsync(item.Job.Name);
 
-        StatusMessage = skipped > 0
-            ? $"Manual run started for {runnable.Count} job(s). Skipped {skipped} non-manual job(s)."
-            : $"Manual run started for {runnable.Count} job(s).";
+        StatusMessage = $"Starting {selected.Count} job(s).";
     }
 
     public async Task StopCheckedJobsAsync()

@@ -104,7 +104,6 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding Job.Enabled}" Width="Auto" IsReadOnly="True" />
                 <DataGridTextColumn Header="Command" Binding="{Binding Job.Process.Command}" Width="2*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Trigger Path" Binding="{Binding Job.FileTrigger.WatchPath}" Width="2*" IsReadOnly="True" />
 

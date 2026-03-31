@@ -1,0 +1,18 @@
+{
+  "name": "Extract Pressure & Scan Summary (R Script)",
+  "type": "ManualAndScheduled",
+  "enabled": false,
+  "process": {
+    "command": "C:\\Program Files\\R\\R-4.2.0\\bin\\Rscript.exe",
+    "arguments": "\"C:\\automation-hub\\AutoRunScripts\\Extract_pressure_withOAZ1.R\"",
+    "timeoutMinutes": 120
+  },
+  "schedule": {
+    "cron": "0 30 6 ? * MON-FRI",
+    "timezone": "Central Standard Time",
+    "startPaused": true
+  },
+  "outputLog": "Y:/temporary_files/JO/keep/logs/extract_pressure.log",
+  "tags": ["pressure", "msconvert", "r-script", "raw-files"],
+  "notes": "Runs Extract_pressure_withOAZ1.R via Rscript.exe. Finds unprocessed .raw files under Y:/msdata/2026/yyyy_mm, converts them with msconvert.exe to extract pressure chromatograms, generates plots and appends to scansummary.csv. Requires R 4.2.0, ProteoWizard msconvert, and packages: tidyverse, ggplot2, cowplot, gridExtra. Script exits cleanly (status 0) when there is nothing to do. Update Rscript path if R version changes."
+}

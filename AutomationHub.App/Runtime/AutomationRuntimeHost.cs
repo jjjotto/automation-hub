@@ -59,68 +59,103 @@ public sealed class AutomationRuntimeHost : IAsyncDisposable
                 continue;
             }
 
-            _statusService.Update(job.Name, "Idle");
-
             cancellationToken.ThrowIfCancellationRequested();
+            await WireJobAsync(job).ConfigureAwait(false);
+        }
 
-            if (job.Type.HasFlag(JobType.FileTrigger) && job.FileTrigger is not null)
+        _started = true;
+    }
+
+    // Re-starts a job that has been stopped. For Manual-only jobs, triggers an immediate run.
+    // For FileTrigger / Scheduled / Hybrid jobs, re-creates the watcher / schedule.
+    public async Task RestartJobAsync(string jobName)
+    {
+        var entry = JobEntries.FirstOrDefault(e => string.Equals(e.Job.Name, jobName, StringComparison.OrdinalIgnoreCase));
+        if (entry is null)
+        {
+            return;
+        }
+
+        var job = entry.Job;
+
+        // Stop any still-active infrastructure for this job before re-wiring.
+        if (_fileRunners.ContainsKey(jobName) || _scheduledHandles.ContainsKey(jobName))
+        {
+            await StopJobAsync(jobName).ConfigureAwait(false);
+        }
+
+        // Manual-only jobs: run immediately instead of re-registering a watcher.
+        if (job.Type == JobType.Manual)
+        {
+            _activityLog.Append(job.Name, "Manual run requested.");
+            _statusService.Update(job.Name, "Manual run requested");
+            _ = _orchestrator.ExecuteJobAsync(job, _cts.Token);
+            return;
+        }
+
+        _activityLog.Append(job.Name, "Restarting job.");
+        await WireJobAsync(job).ConfigureAwait(false);
+    }
+
+    private async Task WireJobAsync(JobDefinition job)
+    {
+        _statusService.Update(job.Name, "Idle");
+
+        if (job.Type.HasFlag(JobType.FileTrigger) && job.FileTrigger is not null)
+        {
+            if (!Directory.Exists(job.FileTrigger.WatchPath))
             {
-                if (!Directory.Exists(job.FileTrigger.WatchPath))
-                {
-                    _runtimeErrors.Add($"[{job.Name}] Watch path '{job.FileTrigger.WatchPath}' is not accessible.");
-                    _activityLog.Append(job.Name, $"Watch path '{job.FileTrigger.WatchPath}' is not accessible.");
-                    _statusService.Update(job.Name, "Watch path not accessible");
-                }
-                else
-                {
-                    try
-                    {
-                        var runner = new FileTriggeredJobRunner(job, _orchestrator, _activityLog, _statusService);
-                        await runner.StartAsync(_cts.Token).ConfigureAwait(false);
-                        _fileRunners[job.Name] = runner;
-                        _activityLog.Append(job.Name, $"File trigger active on '{job.FileTrigger.WatchPath}'.");
-                        _statusService.Update(job.Name, "File trigger active - waiting for files");
-                    }
-                    catch (Exception ex)
-                    {
-                        _runtimeErrors.Add($"[{job.Name}] Failed to start file trigger: {ex.Message}");
-                        _activityLog.Append(job.Name, $"Failed to start file trigger: {ex.Message}");
-                        _statusService.Update(job.Name, $"File trigger error: {ex.Message}");
-                    }
-                }
+                _runtimeErrors.Add($"[{job.Name}] Watch path '{job.FileTrigger.WatchPath}' is not accessible.");
+                _activityLog.Append(job.Name, $"Watch path '{job.FileTrigger.WatchPath}' is not accessible.");
+                _statusService.Update(job.Name, "Watch path not accessible");
             }
-
-            if (job.Type.HasFlag(JobType.Scheduled) && job.Schedule is not null)
+            else
             {
                 try
                 {
-                    var handle = _scheduler.RegisterMinutePollJob(job, async ct =>
-                    {
-                        _activityLog.Append(job.Name, "Scheduled trigger fired.");
-                        _statusService.Update(job.Name, "Scheduled trigger running");
-                        var result = await _orchestrator.ExecuteJobAsync(job, ct).ConfigureAwait(false);
-                        _activityLog.Append(job.Name, result.Success
-                            ? "Scheduled run completed. Waiting for next occurrence."
-                            : $"Scheduled run failed: {result.Message}");
-                        _statusService.Update(job.Name, result.Success
-                            ? "Scheduled - waiting for next run"
-                            : $"Error: {result.Message}");
-                    }, _cts.Token);
-
-                    _scheduledHandles[job.Name] = handle;
-                    _activityLog.Append(job.Name, "Schedule registered and active.");
-                    _statusService.Update(job.Name, "Scheduled - waiting for next run");
+                    var runner = new FileTriggeredJobRunner(job, _orchestrator, _activityLog, _statusService);
+                    await runner.StartAsync(_cts.Token).ConfigureAwait(false);
+                    _fileRunners[job.Name] = runner;
+                    _activityLog.Append(job.Name, $"File trigger active on '{job.FileTrigger.WatchPath}'.");
+                    _statusService.Update(job.Name, "File trigger active - waiting for files");
                 }
                 catch (Exception ex)
                 {
-                    _runtimeErrors.Add($"[{job.Name}] Failed to register schedule: {ex.Message}");
-                    _activityLog.Append(job.Name, $"Failed to register schedule: {ex.Message}");
-                    _statusService.Update(job.Name, $"Schedule error: {ex.Message}");
+                    _runtimeErrors.Add($"[{job.Name}] Failed to start file trigger: {ex.Message}");
+                    _activityLog.Append(job.Name, $"Failed to start file trigger: {ex.Message}");
+                    _statusService.Update(job.Name, $"File trigger error: {ex.Message}");
                 }
             }
         }
 
-        _started = true;
+        if (job.Type.HasFlag(JobType.Scheduled) && job.Schedule is not null)
+        {
+            try
+            {
+                var handle = _scheduler.RegisterMinutePollJob(job, async ct =>
+                {
+                    _activityLog.Append(job.Name, "Scheduled trigger fired.");
+                    _statusService.Update(job.Name, "Scheduled trigger running");
+                    var result = await _orchestrator.ExecuteJobAsync(job, ct).ConfigureAwait(false);
+                    _activityLog.Append(job.Name, result.Success
+                        ? "Scheduled run completed. Waiting for next occurrence."
+                        : $"Scheduled run failed: {result.Message}");
+                    _statusService.Update(job.Name, result.Success
+                        ? "Scheduled - waiting for next run"
+                        : $"Error: {result.Message}");
+                }, _cts.Token);
+
+                _scheduledHandles[job.Name] = handle;
+                _activityLog.Append(job.Name, "Schedule registered and active.");
+                _statusService.Update(job.Name, "Scheduled - waiting for next run");
+            }
+            catch (Exception ex)
+            {
+                _runtimeErrors.Add($"[{job.Name}] Failed to register schedule: {ex.Message}");
+                _activityLog.Append(job.Name, $"Failed to register schedule: {ex.Message}");
+                _statusService.Update(job.Name, $"Schedule error: {ex.Message}");
+            }
+        }
     }
 
     public Task<JobRunResult> RunJobAsync(string jobName, CancellationToken cancellationToken = default)

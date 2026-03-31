@@ -24,8 +24,6 @@
                           Width="200" />
             </StackPanel>
 
-            <CheckBox Content="Enabled" IsChecked="{Binding Enabled}" />
-
             <GroupBox Header="Process" Padding="12">
                 <StackPanel Orientation="Vertical">
                     <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
