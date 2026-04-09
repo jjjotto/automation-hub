@@ -34,6 +34,11 @@
                         <TextBlock Text="Arguments" Width="120" VerticalAlignment="Center" />
                         <TextBox Text="{Binding Process.Arguments}" Width="320" />
                     </StackPanel>
+                    <TextBlock Text="For file-trigger jobs, you can use {triggerFilePath} or {triggerFileName} in Arguments."
+                               Margin="120,2,0,0"
+                               Foreground="Gray"
+                               TextWrapping="Wrap"
+                               Width="320" />
                     <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                         <TextBlock Text="Working Directory" Width="120" VerticalAlignment="Center" />
                         <TextBox Text="{Binding Process.WorkingDirectory}" Width="320" />

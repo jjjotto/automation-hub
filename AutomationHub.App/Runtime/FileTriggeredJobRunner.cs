@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using AutomationHub.Core.Execution;
@@ -13,6 +14,9 @@ namespace AutomationHub.App.Runtime;
 
 public sealed class FileTriggeredJobRunner : IAsyncDisposable
 {
+    private const string TriggerFilePathToken = "{triggerFilePath}";
+    private const string TriggerFileNameToken = "{triggerFileName}";
+
     private readonly JobDefinition _job;
     private readonly JobExecutionOrchestrator _orchestrator;
     private readonly JobActivityLogService _activityLog;
@@ -101,7 +105,8 @@ public sealed class FileTriggeredJobRunner : IAsyncDisposable
             await _readinessPolicy.WaitUntilReadyAsync(filePath, token).ConfigureAwait(false);
             Log($"Launching job for '{fileName}'.");
             SetStatus($"Launching job for {fileName}...");
-            var result = await _orchestrator.ExecuteJobAsync(_job, token).ConfigureAwait(false);
+            var resolvedJob = CreateResolvedJob(filePath);
+            var result = await _orchestrator.ExecuteJobAsync(resolvedJob, token).ConfigureAwait(false);
             Trace.WriteLine($"[{_job.Name}] Triggered by '{filePath}' - Success: {result.Success} - {result.Message}");
             var idleMessage = result.Success
                 ? $"Run triggered by '{fileName}' finished successfully. Waiting for new files..."
@@ -121,6 +126,57 @@ public sealed class FileTriggeredJobRunner : IAsyncDisposable
             Log($"Error processing '{Path.GetFileName(filePath)}': {ex.Message}");
             SetStatus($"Error processing file: {ex.Message}");
         }
+    }
+
+    private JobDefinition CreateResolvedJob(string filePath)
+    {
+        var commandArgs = _job.Process.Arguments;
+        if (string.IsNullOrWhiteSpace(commandArgs))
+        {
+            return _job;
+        }
+
+        var fileName = Path.GetFileName(filePath) ?? string.Empty;
+        var resolvedArguments = commandArgs
+            .Replace(TriggerFilePathToken, filePath, StringComparison.OrdinalIgnoreCase)
+            .Replace(TriggerFileNameToken, fileName, StringComparison.OrdinalIgnoreCase);
+
+        // Support environment-variable style placeholders for convenience.
+        resolvedArguments = Regex.Replace(
+            resolvedArguments,
+            "%TRIGGER_FILE_PATH%",
+            filePath,
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        resolvedArguments = Regex.Replace(
+            resolvedArguments,
+            "%TRIGGER_FILE_NAME%",
+            fileName,
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        if (string.Equals(commandArgs, resolvedArguments, StringComparison.Ordinal))
+        {
+            return _job;
+        }
+
+        return new JobDefinition
+        {
+            Name = _job.Name,
+            Type = _job.Type,
+            Enabled = _job.Enabled,
+            Process = new JobProcessSettings
+            {
+                Command = _job.Process.Command,
+                Arguments = resolvedArguments,
+                WorkingDirectory = _job.Process.WorkingDirectory,
+                EnvironmentVariables = _job.Process.EnvironmentVariables,
+                TimeoutMinutes = _job.Process.TimeoutMinutes
+            },
+            FileTrigger = _job.FileTrigger,
+            Schedule = _job.Schedule,
+            OutputLogPath = _job.OutputLogPath,
+            Tags = _job.Tags,
+            Notes = _job.Notes
+        };
     }
 
     private static string NormalizePath(string path)

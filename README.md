@@ -60,6 +60,7 @@ Automation Hub now spins up a runtime host when the WPF app launches:
    - Manual jobs can still be launched through the monitor/orchestrator services.
 - **ProcessMonitorService** continues to track running/completed executions so the UI (and future dashboards) can render health/state.
 - **Job Settings Dialog** – Every row in the grid now has a _Settings…_ button. Users can edit the command, working directory, timeout, file-trigger folder/pattern/instrument, and acquisition minutes in-app. Saving writes the JSON back to disk and hot-reloads the runtime so new watchers take effect immediately.
+- **Trigger File Argument Tokens** – For file-triggered jobs, the Process > Arguments field supports `{triggerFilePath}` and `{triggerFileName}` (also `%TRIGGER_FILE_PATH%` and `%TRIGGER_FILE_NAME%`). These are replaced at runtime with the file that triggered the run.
 - **Add Job Button** – Use the _Add Job_ action in the header to create a brand-new manifest from the GUI. The app creates a default JSON file in the configured jobs directory and immediately opens the settings dialog so you can fill in details without touching the filesystem.
 - **Per-job Activity Log** – Each job now includes a _View Log_ button that opens a live feed of watcher events, scheduled triggers, and process outcomes with timestamps. Use it to confirm that a file-triggered job fired moments ago and is now waiting for the next matching file.
 

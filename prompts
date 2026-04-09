@@ -22,4 +22,6 @@ I'm testing this "C:\WebApps\automation-hub\AutoRunScripts\Batch_ImportNew_Expor
 The task I have set is triggering for new files, but i'm getting the error "Failed to start process" for this script "C:\WebApps\automation-hub\AutoRunScripts\Batch_ImportNew_ExportRT.bat".  I'm not seeing any additional error logging so I'm not sure what's happening.
 
 ##########################
+in the "arguments' section for job settings, how can I specify the file name that triggers the task shold be used as an argument after the command?
+
 the AutoRunScripts\Batch_ImportNew_ExportRT.bat and AutoRunScripts\Extract_pressure_batch.bat run applications that include all the instruments in our lab.  Split out the steps for each 
