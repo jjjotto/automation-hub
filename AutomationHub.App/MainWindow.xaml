@@ -8,130 +8,193 @@
         Title="Automation Hub" Height="540" Width="1100">
     <Grid Margin="12">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <DockPanel>
-            <TextBlock Text="Automation Hub Jobs"
-                       FontSize="20"
-                       FontWeight="Bold"
-                       DockPanel.Dock="Left"
-                       VerticalAlignment="Center" />
-            <Button Content="Add Job"
-                    Width="90"
-                    Margin="8,0,0,0"
-                    HorizontalAlignment="Right"
-                    Click="OnAddJobClicked" />
-        </DockPanel>
+        <TabControl>
+            <TabItem Header="Jobs">
+                <Grid Margin="0,8,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-        <!-- Bulk action toolbar -->
-        <Border Grid.Row="1"
-                Background="#F8F8F8"
-                BorderBrush="#DDDDDD"
-                BorderThickness="1"
-                CornerRadius="3"
-                Margin="0,8,0,0"
-                Padding="6,5">
-            <StackPanel Orientation="Horizontal">
-                <CheckBox x:Name="SelectAllCheckBox"
-                          Content="Select all"
-                          VerticalAlignment="Center"
-                          Margin="2,0,10,0"
-                          Click="OnToggleSelectAll" />
-                <Separator Width="1" Margin="0,2,8,2" Background="#CCCCCC" />
-                <Button Content="&#9654;  Run"
-                        Width="80"
-                        Margin="0,0,4,0"
-                        Padding="6,3"
-                        Background="#DFF0D8"
-                        Click="OnStartCheckedClicked"
-                        ToolTip="Run the checked jobs now" />
-                <Button Content="&#9632;  Stop"
-                        Width="80"
-                        Margin="0,0,4,0"
-                        Padding="6,3"
-                        Background="#FCF8E3"
-                        Click="OnStopCheckedClicked"
-                        ToolTip="Stop the checked jobs" />
-                <Button Content="&#10005;  Remove"
-                        Width="90"
-                        Margin="0,0,4,0"
-                        Padding="6,3"
-                        Background="#F2DEDE"
-                        Click="OnRemoveCheckedClicked"
-                        ToolTip="Delete the checked job configurations" />
-            </StackPanel>
-        </Border>
+                    <DockPanel>
+                        <TextBlock Text="Automation Hub Jobs"
+                                   FontSize="20"
+                                   FontWeight="Bold"
+                                   DockPanel.Dock="Left"
+                                   VerticalAlignment="Center" />
+                        <Button Content="Add Job"
+                                Width="90"
+                                Margin="8,0,0,0"
+                                HorizontalAlignment="Right"
+                                Click="OnAddJobClicked" />
+                    </DockPanel>
 
-        <!-- Job list -->
-        <DataGrid Grid.Row="2"
-                  ItemsSource="{Binding Jobs}"
-                  AutoGenerateColumns="False"
-                  HeadersVisibility="Column"
-                  CanUserAddRows="False"
-                  Margin="0,8,0,8">
-            <DataGrid.Columns>
-                <!-- Check column -->
-                <DataGridTemplateColumn Width="30" CanUserSort="False" CanUserResize="False" CanUserReorder="False">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <Border Grid.Row="1"
+                            Background="#F8F8F8"
+                            BorderBrush="#DDDDDD"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Margin="0,8,0,0"
+                            Padding="6,5">
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox x:Name="SelectAllCheckBox"
+                                      Content="Select all"
+                                      VerticalAlignment="Center"
+                                      Margin="2,0,10,0"
+                                      Click="OnToggleSelectAll" />
+                            <Separator Width="1" Margin="0,2,8,2" Background="#CCCCCC" />
+                            <Button Content="&#9654;  Run"
+                                    Width="80"
+                                    Margin="0,0,4,0"
+                                    Padding="6,3"
+                                    Background="#DFF0D8"
+                                    Click="OnStartCheckedClicked"
+                                    ToolTip="Run the checked jobs now" />
+                            <Button Content="&#9632;  Stop"
+                                    Width="80"
+                                    Margin="0,0,4,0"
+                                    Padding="6,3"
+                                    Background="#FCF8E3"
+                                    Click="OnStopCheckedClicked"
+                                    ToolTip="Stop the checked jobs" />
+                            <Button Content="&#10005;  Remove"
+                                    Width="90"
+                                    Margin="0,0,4,0"
+                                    Padding="6,3"
+                                    Background="#F2DEDE"
+                                    Click="OnRemoveCheckedClicked"
+                                    ToolTip="Delete the checked job configurations" />
+                        </StackPanel>
+                    </Border>
 
-                <DataGridTextColumn Header="Name" Binding="{Binding Job.Name}" Width="2*" IsReadOnly="True" />
-                <DataGridTextColumn Header="Type" Binding="{Binding Job.Type}" Width="*" IsReadOnly="True" />
+                    <DataGrid Grid.Row="2"
+                              ItemsSource="{Binding Jobs}"
+                              AutoGenerateColumns="False"
+                              HeadersVisibility="Column"
+                              CanUserAddRows="False"
+                              Margin="0,8,0,8">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Width="30" CanUserSort="False" CanUserResize="False" CanUserReorder="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
 
-                <!-- Status column with live color -->
-                <DataGridTemplateColumn Header="Status" Width="2*" IsReadOnly="True">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Status}"
-                                       Foreground="{Binding StatusColor}"
-                                       FontWeight="SemiBold"
-                                       ToolTip="{Binding Status}"
-                                       TextTrimming="CharacterEllipsis"
-                                       VerticalAlignment="Center"
-                                       Margin="2,0" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Name" Binding="{Binding Job.Name}" Width="2*" IsReadOnly="True" />
+                            <DataGridTextColumn Header="Type" Binding="{Binding Job.Type}" Width="*" IsReadOnly="True" />
 
-                <DataGridTextColumn Header="Command" Binding="{Binding Job.Process.Command}" Width="2*" IsReadOnly="True" />
-                <DataGridTextColumn Header="Trigger Path" Binding="{Binding Job.FileTrigger.WatchPath}" Width="2*" IsReadOnly="True" />
+                            <DataGridTemplateColumn Header="Status" Width="2*" IsReadOnly="True">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Status}"
+                                                   Foreground="{Binding StatusColor}"
+                                                   FontWeight="SemiBold"
+                                                   ToolTip="{Binding Status}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center"
+                                                   Margin="2,0" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Log" Width="Auto">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Button Content="View Log"
-                                    Padding="8,2"
-                                    Margin="4,0"
-                                    Click="OnViewLogClicked" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Command" Binding="{Binding Job.Process.Command}" Width="2*" IsReadOnly="True" />
+                            <DataGridTextColumn Header="Trigger Path" Binding="{Binding Job.FileTrigger.WatchPath}" Width="2*" IsReadOnly="True" />
 
-                <DataGridTemplateColumn Header="Settings" Width="Auto">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Button Content="Settings..."
-                                    Padding="8,2"
-                                    Margin="4,0"
-                                    Click="OnJobSettingsClicked" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
+                            <DataGridTemplateColumn Header="Log" Width="Auto">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="View Log"
+                                                Padding="8,2"
+                                                Margin="4,0"
+                                                Click="OnViewLogClicked" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
 
-        <TextBlock Grid.Row="3"
+                            <DataGridTemplateColumn Header="Settings" Width="Auto">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="Settings..."
+                                                Padding="8,2"
+                                                Margin="4,0"
+                                                Click="OnJobSettingsClicked" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Web Apps">
+                <Grid Margin="0,8,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            Background="#F3F7FB"
+                            BorderBrush="#B9D1E8"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="12"
+                            AllowDrop="True"
+                            DragOver="OnWebAppsDropZoneDragOver"
+                            Drop="OnWebAppsDropZoneDrop">
+                        <TextBlock Text="Drag and drop .bat, .cmd, .lnk, or .exe files here. They will be added, started, and monitored automatically."
+                                   TextWrapping="Wrap"
+                                   Foreground="#1D3F5F"
+                                   FontWeight="SemiBold" />
+                    </Border>
+
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding WebApps}"
+                              AutoGenerateColumns="False"
+                              HeadersVisibility="Column"
+                              CanUserAddRows="False"
+                              Margin="0,8,0,8">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="*" IsReadOnly="True" />
+                            <DataGridTextColumn Header="Source Path" Binding="{Binding SourcePath}" Width="2*" IsReadOnly="True" />
+                            <DataGridTextColumn Header="Launch Path" Binding="{Binding LaunchPath}" Width="2*" IsReadOnly="True" />
+                            <DataGridCheckBoxColumn Header="Running" Binding="{Binding IsRunning}" Width="80" IsReadOnly="True" />
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="2*" IsReadOnly="True" />
+                            <DataGridTextColumn Header="Last Started" Binding="{Binding LastStartedAt, StringFormat={}{0:yyyy-MM-dd HH:mm:ss}}" Width="150" IsReadOnly="True" />
+                            <DataGridTextColumn Header="Ports" Binding="{Binding Ports}" Width="100" IsReadOnly="True" />
+
+                                <DataGridTemplateColumn Header="Actions" Width="140">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Content="Start"
+                                                    Padding="8,2"
+                                                    Margin="2,0"
+                                                    Click="OnWebAppStartClicked" />
+                                            <Button Content="Remove"
+                                                    Padding="8,2"
+                                                    Margin="2,0"
+                                                    Click="OnWebAppRemoveClicked" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <TextBlock Grid.Row="1"
                    Text="{Binding StatusMessage}"
                    FontStyle="Italic"
                    Foreground="Gray" />

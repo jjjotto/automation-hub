@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using AutomationHub.App.ViewModels;
 using AutomationHub.App.Views;
 using AutomationHub.Core.Configuration;
@@ -16,12 +17,31 @@ namespace AutomationHub.App;
 public partial class MainWindow : Window
 {
     private readonly MainWindowViewModel _viewModel = new();
+    private readonly DispatcherTimer _webAppMonitorTimer = new();
 
     public MainWindow()
     {
         InitializeComponent();
         DataContext = _viewModel;
-        Loaded += (_, _) => _viewModel.LoadJobs();
+        Loaded += OnLoaded;
+        Closed += OnClosed;
+
+        _webAppMonitorTimer.Interval = TimeSpan.FromSeconds(3);
+        _webAppMonitorTimer.Tick += (_, _) => _viewModel.RefreshWebAppsStatus();
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        _viewModel.LoadJobs();
+        _viewModel.LoadWebAppsConfiguration();
+        _viewModel.RefreshWebAppsStatus();
+        _webAppMonitorTimer.Start();
+    }
+
+    private void OnClosed(object? sender, EventArgs e)
+    {
+        _webAppMonitorTimer.Stop();
+        _viewModel.SaveWebAppsConfiguration();
     }
 
     private void OnJobSettingsClicked(object sender, RoutedEventArgs e)
@@ -166,5 +186,60 @@ public partial class MainWindow : Window
     {
         if (sender is CheckBox cb)
             _viewModel.SetAllChecked(cb.IsChecked == true);
+    }
+
+    private void OnWebAppsDropZoneDragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop)
+            ? DragDropEffects.Copy
+            : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void OnWebAppsDropZoneDrop(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            return;
+        }
+
+        if (e.Data.GetData(DataFormats.FileDrop) is not string[] droppedFiles)
+        {
+            return;
+        }
+
+        _viewModel.AddWebAppsFromDrop(droppedFiles);
+        _viewModel.RefreshWebAppsStatus();
+    }
+
+    private void OnWebAppStartClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement element)
+        {
+            return;
+        }
+
+        if (element.DataContext is not WebAppItemViewModel item)
+        {
+            return;
+        }
+
+        _viewModel.StartWebApp(item, out _);
+        _viewModel.RefreshWebAppsStatus();
+    }
+
+    private void OnWebAppRemoveClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement element)
+        {
+            return;
+        }
+
+        if (element.DataContext is not WebAppItemViewModel item)
+        {
+            return;
+        }
+
+        _viewModel.RemoveWebApp(item);
     }
 }
