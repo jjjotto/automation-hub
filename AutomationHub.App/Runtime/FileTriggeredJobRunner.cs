@@ -101,7 +101,8 @@ public sealed class FileTriggeredJobRunner : IAsyncDisposable
             await _readinessPolicy.WaitUntilReadyAsync(filePath, token).ConfigureAwait(false);
             Log($"Launching job for '{fileName}'.");
             SetStatus($"Launching job for {fileName}...");
-            var result = await _orchestrator.ExecuteJobAsync(_job, token).ConfigureAwait(false);
+            var executionJob = BuildExecutionJobForTrigger(filePath);
+            var result = await _orchestrator.ExecuteJobAsync(executionJob, token).ConfigureAwait(false);
             Trace.WriteLine($"[{_job.Name}] Triggered by '{filePath}' - Success: {result.Success} - {result.Message}");
             var idleMessage = result.Success
                 ? $"Run triggered by '{fileName}' finished successfully. Waiting for new files..."
@@ -133,6 +134,66 @@ public sealed class FileTriggeredJobRunner : IAsyncDisposable
         {
             return path;
         }
+    }
+
+    private JobDefinition BuildExecutionJobForTrigger(string filePath)
+    {
+        var process = _job.Process;
+        var replacedProcess = new JobProcessSettings
+        {
+            Command = ReplaceTriggerPathTokens(process.Command, filePath) ?? string.Empty,
+            Arguments = ReplaceTriggerPathTokens(process.Arguments, filePath),
+            WorkingDirectory = ReplaceTriggerPathTokens(process.WorkingDirectory, filePath),
+            EnvironmentVariables = ReplaceTriggerPathTokens(process.EnvironmentVariables, filePath),
+            TimeoutMinutes = process.TimeoutMinutes
+        };
+
+        return new JobDefinition
+        {
+            Name = _job.Name,
+            Type = _job.Type,
+            Enabled = _job.Enabled,
+            Process = replacedProcess,
+            FileTrigger = _job.FileTrigger,
+            Schedule = _job.Schedule,
+            OutputLogPath = ReplaceTriggerPathTokens(_job.OutputLogPath, filePath),
+            Tags = _job.Tags,
+            Notes = _job.Notes
+        };
+    }
+
+    private static Dictionary<string, string>? ReplaceTriggerPathTokens(
+        Dictionary<string, string>? environment,
+        string filePath)
+    {
+        if (environment is null || environment.Count == 0)
+        {
+            return environment;
+        }
+
+        var replaced = new Dictionary<string, string>(environment.Count, StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in environment)
+        {
+            var value = ReplaceTriggerPathTokens(entry.Value, filePath) ?? string.Empty;
+            replaced[entry.Key] = value;
+        }
+
+        return replaced;
+    }
+
+    private static string? ReplaceTriggerPathTokens(string? text, string filePath)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return text;
+        }
+
+        var replaced = text;
+        replaced = replaced.Replace("%TRIGGER_FILE_PATH%", filePath, StringComparison.OrdinalIgnoreCase);
+        replaced = replaced.Replace("%TRIGGER FILE PATH%", filePath, StringComparison.OrdinalIgnoreCase);
+        replaced = replaced.Replace("{TRIGGER_FILE_PATH}", filePath, StringComparison.OrdinalIgnoreCase);
+        replaced = replaced.Replace("{TRIGGER FILE PATH}", filePath, StringComparison.OrdinalIgnoreCase);
+        return replaced;
     }
 
     public async Task StopAsync()
