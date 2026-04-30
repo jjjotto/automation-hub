@@ -14,8 +14,18 @@ namespace AutomationHub.App.Runtime;
 
 public sealed class FileTriggeredJobRunner : IAsyncDisposable
 {
+<<<<<<< Updated upstream
     private const string TriggerFilePathToken = "{triggerFilePath}";
     private const string TriggerFileNameToken = "{triggerFileName}";
+=======
+    private static readonly Regex TriggerPathPercentTokenRegex = new(
+        @"%\s*TRIGGER(?:\s+|_)+FILE(?:\s+|_)+PATH\s*%",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    private static readonly Regex TriggerPathBraceTokenRegex = new(
+        @"\{\s*TRIGGER(?:\s+|_)+FILE(?:\s+|_)+PATH\s*\}",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+>>>>>>> Stashed changes
 
     private readonly JobDefinition _job;
     private readonly JobExecutionOrchestrator _orchestrator;
@@ -191,6 +201,102 @@ public sealed class FileTriggeredJobRunner : IAsyncDisposable
         }
     }
 
+<<<<<<< Updated upstream
+=======
+    private JobDefinition BuildExecutionJobForTrigger(string filePath)
+    {
+        var process = _job.Process;
+        var replacedEnvironment = ReplaceTriggerPathTokens(process.EnvironmentVariables, filePath)
+            ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // Expose trigger context as environment variables for batch/cmd scripts that expand %VAR%.
+        replacedEnvironment["TRIGGER_FILE_PATH"] = filePath;
+        replacedEnvironment["TRIGGER FILE PATH"] = filePath;
+        replacedEnvironment["TRIGGER_FILE_NAME"] = Path.GetFileName(filePath);
+        replacedEnvironment["TRIGGER_FILE_DIRECTORY"] = Path.GetDirectoryName(filePath) ?? string.Empty;
+
+        var originalArgs = process.Arguments;
+        var replacedArgs = ReplaceTriggerPathTokens(process.Arguments, filePath);
+        
+        // Log the substitution for debugging
+        if (!string.Equals(originalArgs, replacedArgs))
+        {
+            Trace.WriteLine($"[{_job.Name}] Arguments substitution: '{originalArgs}' -> '{replacedArgs}'");
+        }
+        else if (!string.IsNullOrEmpty(originalArgs))
+        {
+            Trace.WriteLine($"[{_job.Name}] Warning: Arguments contain potential token but no substitution occurred: '{originalArgs}'");
+        }
+
+        var replacedProcess = new JobProcessSettings
+        {
+            Command = ReplaceTriggerPathTokens(process.Command, filePath) ?? string.Empty,
+            Arguments = replacedArgs,
+            WorkingDirectory = ReplaceTriggerPathTokens(process.WorkingDirectory, filePath),
+            EnvironmentVariables = replacedEnvironment,
+            TimeoutMinutes = process.TimeoutMinutes
+        };
+
+        return new JobDefinition
+        {
+            Name = _job.Name,
+            Type = _job.Type,
+            Enabled = _job.Enabled,
+            Process = replacedProcess,
+            FileTrigger = _job.FileTrigger,
+            Schedule = _job.Schedule,
+            OutputLogPath = ReplaceTriggerPathTokens(_job.OutputLogPath, filePath),
+            Tags = _job.Tags,
+            Notes = _job.Notes
+        };
+    }
+
+    private static Dictionary<string, string>? ReplaceTriggerPathTokens(
+        Dictionary<string, string>? environment,
+        string filePath)
+    {
+        if (environment is null || environment.Count == 0)
+        {
+            return environment;
+        }
+
+        var replaced = new Dictionary<string, string>(environment.Count, StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in environment)
+        {
+            var value = ReplaceTriggerPathTokens(entry.Value, filePath) ?? string.Empty;
+            replaced[entry.Key] = value;
+        }
+
+        return replaced;
+    }
+
+    private static string? ReplaceTriggerPathTokens(string? text, string filePath)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return text;
+        }
+
+        // Replace tokens with the actual file path
+        var replaced = TriggerPathPercentTokenRegex.Replace(text, filePath);
+        replaced = TriggerPathBraceTokenRegex.Replace(replaced, filePath);
+        
+        // Also handle quoted tokens: "%TRIGGER_FILE_PATH%" or '%TRIGGER_FILE_PATH%'
+        // by replacing "quoted" and 'quoted' tokens with "quoted file path" and 'quoted file path'
+        replaced = Regex.Replace(replaced, 
+            @"""\s*(?:%\s*TRIGGER(?:\s+|_)+FILE(?:\s+|_)+PATH\s*%|\{\s*TRIGGER(?:\s+|_)+FILE(?:\s+|_)+PATH\s*\})\s*""", 
+            match => $"\"{filePath}\"",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        
+        replaced = Regex.Replace(replaced,
+            @"'\s*(?:%\s*TRIGGER(?:\s+|_)+FILE(?:\s+|_)+PATH\s*%|\{\s*TRIGGER(?:\s+|_)+FILE(?:\s+|_)+PATH\s*\})\s*'",
+            match => $"'{filePath}'",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        
+        return replaced;
+    }
+
+>>>>>>> Stashed changes
     public async Task StopAsync()
     {
         _cts?.Cancel();

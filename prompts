@@ -22,6 +22,11 @@ I'm testing this "C:\WebApps\automation-hub\AutoRunScripts\Batch_ImportNew_Expor
 The task I have set is triggering for new files, but i'm getting the error "Failed to start process" for this script "C:\WebApps\automation-hub\AutoRunScripts\Batch_ImportNew_ExportRT.bat".  I'm not seeing any additional error logging so I'm not sure what's happening.
 
 ##########################
+<<<<<<< Updated upstream
 in the "arguments' section for job settings, how can I specify the file name that triggers the task shold be used as an argument after the command?
 
 the AutoRunScripts\Batch_ImportNew_ExportRT.bat and AutoRunScripts\Extract_pressure_batch.bat run applications that include all the instruments in our lab.  Split out the steps for each 
+=======
+I've set a task that runs when a new file meets specifications but it is submitting with %TRIGGER_FILE_PATH% instead of the actual file name.  The task is the submit_diann_job.bat file that is in this folder and it can be submitted like the following line where it works correctly.
+submit_diann_job.bat "Y:\msdata\2026\2026_04\OAZ1\OAZ1_HeLa_20260409_E0000532676-20_50ng.raw"
+>>>>>>> Stashed changes

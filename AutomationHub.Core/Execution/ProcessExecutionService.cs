@@ -158,11 +158,27 @@ public sealed class ProcessExecutionService
             || string.Equals(ext, ".cmd", StringComparison.OrdinalIgnoreCase))
         {
             // Batch files require a shell host when UseShellExecute=false.
+            // cmd.exe /c quoting rule: when the command or args contain spaces we must wrap
+            // the entire /c payload in an extra outer pair of quotes so that cmd.exe's
+            // special /c parsing strips those outer quotes and correctly interprets the inner
+            // quoted tokens.  The safe form is always:
+            //   cmd.exe /c ""path\script.bat" "arg1" …"
             fileName  = "cmd.exe";
             var args  = settings.Arguments;
-            arguments = string.IsNullOrWhiteSpace(args)
-                ? $"/c \"{command}\""
-                : $"/c \"{command}\" {args}";
+            if (string.IsNullOrWhiteSpace(args))
+            {
+                arguments = $"/c \"\"{command}\"\"";
+            }
+            else
+            {
+                // Preserve existing quoting on args; only add quotes if the caller
+                // passed a bare (unquoted) value.
+                var trimmedArgs = args.Trim();
+                var quotedArgs = (trimmedArgs.StartsWith("\"") && trimmedArgs.EndsWith("\""))
+                    ? trimmedArgs
+                    : $"\"{trimmedArgs}\"";
+                arguments = $"/c \"\"{command}\" {quotedArgs}\"";
+            }
         }
         else
         {
